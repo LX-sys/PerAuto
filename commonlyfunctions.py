@@ -32,7 +32,7 @@ def currentTime(connector_before=":", connector_after=":", custom=None):
 
 
 # 递归显示信息
-def error_display(e):
+def error_display(e,end="\n"):
     exc_type, exc_value, exc_traceback_obj = sys.exc_info()
     # 获取递归的最大程度
     limit = sys.tracebacklimit if hasattr(sys, 'tracebacklimit') else None
@@ -47,7 +47,8 @@ def error_display(e):
         exc_traceback_obj = exc_traceback_obj.tb_next
         n += 1
     if e:  # 显示具体报错信息
-        print(e, end="")
+        print(PrintColor.red(e), end=end)
+
 
 
 if __name__ == '__main__':
