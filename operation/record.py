@@ -15,6 +15,7 @@ def show_record(func_name,args):
 
 
 
+
 # 存储记录(单例模式)
 class RecordDate(object):
     def __new__(cls, *args, **kwargs):
