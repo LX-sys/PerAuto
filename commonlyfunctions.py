@@ -46,7 +46,7 @@ def error_display(e,end="\n"):
         print(PrintColor.red('  File "%s", line %d, in <%s>'% (filename, lineno, name)))
         exc_traceback_obj = exc_traceback_obj.tb_next
         n += 1
-    if e:  # 显示具体报错信息
+    if not(e is None):  # 显示具体报错信息
         print(PrintColor.red(e), end=end)
 
 

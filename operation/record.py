@@ -23,8 +23,12 @@ def show_record(func_name, args=None, func_err=True, is_show=True):
     if is_show:
         print(PrintColor.defaultColor(currentTime()), end="")
         PrintColor.printCColor(func_err, "  <{}>  ".format(func_name), ("green", "red"), end="")
-        print(PrintColor.defaultColor("argc: {}".format(args)))
+        if args:
+            argc_str = [i+" " for i in args["args"]]
+            argc_str = "".join(args)
+            # print(argc_str)
 
+        print(PrintColor.defaultColor("argc: {}".format(args)))
 
 
 # 存储记录(单例模式)
@@ -62,13 +66,13 @@ class Record(object):
         # 显示记录
         self.is_show_record = kwargs.get("is_show_record", True)
 
-    def func_names(self):
-        if hasattr(self, "func_name"):
-            return self.func_name
-        return None
+    # def func_names(self):
+    #     if hasattr(self, "func_name"):
+    #         return self.func_name
+    #     return None
 
     # 对每个函数处理异常
-    def try_func(self, func, *args, **kwargs):
+    def try_func(self, func,func_name, *args, **kwargs):
         func_result = {
             "func_result": None,
             "error_info": None
@@ -82,10 +86,21 @@ class Record(object):
                     "func_result":None,
                     "error_info":e
                 }
-                error_display(e)
         else:
             func_result["func_result"] = func(*args, **kwargs)
-        return func_result
+
+        # 打印记录
+        args_dict = dict()
+        args_dict.update(kwargs)
+        args_dict["args"] = args[1:]
+        show_record(func_name,
+                    args=args_dict,
+                    func_err=True if func_result["func_result"] else False,
+                    is_show=self.is_show_record
+                    )
+        error_display(func_result["error_info"])
+
+        return func_result["func_result"]
 
     def __call__(self, func):
         func_name = func.__name__
@@ -96,16 +111,9 @@ class Record(object):
         def wrapper(*args, **kwargs):
             # 调用者的self
             _self = args[0]
-            func_result = self.try_func(func, *args, **kwargs)
-            # 打印记录
-            show_record(func_name, args[1:],
-                        func_err=True if func_result["func_result"] else False,
-                        is_show=self.is_show_record
-                        )
-            # if not func_result["func_result"]:
-            #     error_display(func_result["error_info"])
-            return func_result["func_result"]
+            func_result = self.try_func(func,func_name,*args, **kwargs)
 
+            return func_result
         # print(self.record_date.func_names())
         return wrapper
 
@@ -115,17 +123,16 @@ class Record(object):
 
 
 class A:
-    @Record(is_show_record=True)
-    def hello(self, a):
+    @Record()
+    def hello(self, a,e=3):
         1/0
         # print("ss", a)
         # raise TypeError("djasiokldjaskldjaksdl")
         return self
-
 
 #
 #     @Record()
 #     def world(self):
 #         print("dd")
 a = A()
-a.hello("dsad")
+a.hello("dsad",e=11)

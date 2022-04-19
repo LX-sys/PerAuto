@@ -22,7 +22,7 @@ import random
 import datetime
 import pyautogui
 import traceback
-import win32com.client
+# import win32com.client
 from functools import wraps
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -49,8 +49,3 @@ from selenium.webdriver.remote.webdriver import WebDriver
 # c.add_argument("--disable-infobars")
 #
 # drive=webdriver.Chrome("chromedriver.exe")
-
-
-
-
-
