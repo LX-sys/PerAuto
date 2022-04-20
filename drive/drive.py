@@ -201,12 +201,14 @@ def tt(f_name):
             print("function_str_name:", function_str_name)
 
         return wrapper
+
     return t
 
 
 # 启动配置类(可以继承它,添加自己的方法)
 class Options(object):
     '''
+        仿写原生Options
         启动配置类
         这个类可以被继承,自定义点击方法和下面一样
     '''
@@ -300,7 +302,7 @@ class Options(object):
 # 驱动类
 class Drive(Options):
     # 这个括号里表示可以适配的驱动
-    driver_or_path = DriveVerification("chromedriver.exe")
+    driver_or_path = DriveVerification("chromedriver")
 
     def __init__(self, driver_or_path=None, **kwargs):
         '''
@@ -311,24 +313,24 @@ class Drive(Options):
         self._options = kwargs.get("options").to_capabilities() if kwargs else None
 
     # 创建浏览器
-    def create_browser(self,url=None):
+    def create_browser(self, url=None):
         browser = self.driver_or_path[0]  # 浏览器函数
         executable_path = self.driver_or_path[1]  # 参数
         # desired_capabilities这个参数selenium真实需要的(也是options)
+        # print(executable_path)
         self.__true_driver = browser(executable_path=executable_path,
                                      desired_capabilities=self._options
                                      )
         if url:
-            self.get(url)
+            self._get(url)
         return self
 
     @property
     def driver(self):
         return self.__true_driver
 
-    def get(self,url):
+    def _get(self, url):
         pass
-
 
 
 # op = Options()
@@ -338,8 +340,9 @@ class Drive(Options):
 # op.headless = True
 # op.disable_info_bar = True
 # op.win_max = True
-# d = Drive("chromedriver.exe")
+# d = Drive(r"chromedriver")
 # d.create_browser()
 # d.get("https://www.baidu.com/")
 # d.wait(3,5)
 # d.quit()
+

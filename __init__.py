@@ -3,5 +3,3 @@
 # @author:LX
 # @file:__init__.py
 # @software:PyCharm
-
-print(True in (None,False))

@@ -103,7 +103,6 @@ class RecordDate(object):
 class Record(object):
 
     def __init__(self, *args, **kwargs):
-
         self.record_date = RecordDate()
         # 异常拦截
         self.abnormal_intercept = kwargs.get("abnormal_intercept", True)
@@ -138,6 +137,7 @@ class Record(object):
         return func_result["func_result"]
 
     def __call__(self, func):
+        print(func)
         func_name = func.__name__
         if not self.record_date.in_(func_name):
             self.record_date.add_func_name(func.__name__)
@@ -160,20 +160,19 @@ class Record(object):
 #     print("sd")
 
 
-class A:
-    @Record()
-    def hello(self, a, e=None):
-        # 1 / 0
-        # print("ss", a)
-        # raise TypeError("djasiokldjaskldjaksdl")
-        return self
+# class A:
+#     @Record("ss")
+#     def hello(self, a, e=None):
 #
-#     @Record()
-#     def world(self):
-#         # print("dd")
+#         print(self.__dict__)
 #         return self
 #
+    # @Record()
+    # def world(self):
+    #     # print("dd")
+    #     return self
 #
-a = A()
-a.hello("das", [1, 23])
+#
+# a = A()
+# a.hello("das", [1, 23])
 # a.world()
