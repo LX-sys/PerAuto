@@ -5,17 +5,59 @@
 # @software:PyCharm
 
 from __future__ import print_function
-from commonlyfunctions import currentTime,error_display
-from header import wraps,sys
+from commonlyfunctions import currentTime, error_display
 from color import PrintColor
+from header import (
+    wraps,
+    sys,
+    json
+)
+
+
+# 参数格式化
+def argc_format(argc):
+    if not argc:
+        return ""
+
+    temp = list()
+    for c in argc:
+        if isinstance(c, int):
+            temp.append(str(c) + ",")
+        elif isinstance(c, str):
+            temp.append("\"{}\",".format(c))
+        elif c is None:
+            temp.append("None,")
+        else:
+            temp.append(json.dumps(c) + ",")
+    return "".join(temp)
+
+
+# 参数格式化
+def argc_format_dict(argc_dict):
+    if not argc_dict:
+        return ""
+
+    temp = list()
+    f = "{}={},"
+    for k, v in argc_dict.items():
+        if isinstance(v, int):
+            temp.append(f.format(k, str(v)))
+        elif isinstance(v, str):
+            temp.append(f.format(k, "\"{}\"".format(v)))
+        elif v is None:
+            temp.append(f.format(k, "None"))
+        else:
+            temp.append(f.format(k, json.dumps(v)))
+
+    return "".join(temp)
 
 
 # 显示记录
-def show_record(func_name, args=None, func_err=True, is_show=True):
+def show_record(func_name, args_=None, func_err=True, is_show=True):
     '''
 
     :param func_name: 函数名称
-    :param args: 参数
+    :param args_: 参数
     :param func_err: True:函数名显示 绿色,False:红色
     :param is_show: 是否显示记录
     :return:
@@ -23,12 +65,14 @@ def show_record(func_name, args=None, func_err=True, is_show=True):
     if is_show:
         print(PrintColor.defaultColor(currentTime()), end="")
         PrintColor.printCColor(func_err, "  <{}>  ".format(func_name), ("green", "red"), end="")
-        if args:
-            argc_str = [i+" " for i in args["args"]]
-            argc_str = "".join(args)
-            # print(argc_str)
-
-        print(PrintColor.defaultColor("argc: {}".format(args)))
+        # 格式显示参数
+        if args_:
+            argc_str = argc_format(args_["args"])
+            del args_["args"]
+            argc_str += argc_format_dict(args_)
+            # 移除最后一个逗号
+            args_ = argc_str.rstrip(",")
+        print(PrintColor.defaultColor("Argc: {}".format(args_)))
 
 
 # 存储记录(单例模式)
@@ -66,13 +110,8 @@ class Record(object):
         # 显示记录
         self.is_show_record = kwargs.get("is_show_record", True)
 
-    # def func_names(self):
-    #     if hasattr(self, "func_name"):
-    #         return self.func_name
-    #     return None
-
     # 对每个函数处理异常
-    def try_func(self, func,func_name, *args, **kwargs):
+    def try_func(self, func, func_name, *args, **kwargs):
         func_result = {
             "func_result": None,
             "error_info": None
@@ -83,21 +122,17 @@ class Record(object):
             except Exception as e:
                 # 返回结果,错误信息
                 func_result = {
-                    "func_result":None,
-                    "error_info":e
+                    "func_result": None,
+                    "error_info": e
                 }
         else:
             func_result["func_result"] = func(*args, **kwargs)
 
         # 打印记录
-        args_dict = dict()
-        args_dict.update(kwargs)
+        args_dict = kwargs
         args_dict["args"] = args[1:]
-        show_record(func_name,
-                    args=args_dict,
-                    func_err=True if func_result["func_result"] else False,
-                    is_show=self.is_show_record
-                    )
+        show_record(func_name, args_=args_dict, func_err=True if func_result["func_result"] else False,
+                    is_show=self.is_show_record)
         error_display(func_result["error_info"])
 
         return func_result["func_result"]
@@ -111,28 +146,34 @@ class Record(object):
         def wrapper(*args, **kwargs):
             # 调用者的self
             _self = args[0]
-            func_result = self.try_func(func,func_name,*args, **kwargs)
 
+            func_result = self.try_func(func, func_name, *args, **kwargs)
             return func_result
-        # print(self.record_date.func_names())
         return wrapper
 
     @staticmethod
     def pp(func):
         print("a")
 
+# @Record()
+# def sss(s):
+#     print("sd")
+
 
 class A:
     @Record()
-    def hello(self, a,e=3):
-        1/0
+    def hello(self, a, e=None):
+        # 1 / 0
         # print("ss", a)
         # raise TypeError("djasiokldjaskldjaksdl")
         return self
-
 #
 #     @Record()
 #     def world(self):
-#         print("dd")
+#         # print("dd")
+#         return self
+#
+#
 a = A()
-a.hello("dsad",e=11)
+a.hello("das", [1, 23])
+# a.world()

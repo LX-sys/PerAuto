@@ -10,7 +10,7 @@ from header import (
     math,
     random,
     datetime,
-    win32com,
+    # win32com,
     pyautogui,
     WebDriver,
     webdriver
@@ -193,8 +193,6 @@ class OptionVerification(object):
 
 def tt(f_name):
     def t(func):
-        print("==============")
-
         def wrapper(*args, **kwargs):
             self = args[0]
             function_str_name = func.__name__
@@ -203,7 +201,6 @@ def tt(f_name):
             print("function_str_name:", function_str_name)
 
         return wrapper
-
     return t
 
 
@@ -314,7 +311,7 @@ class Drive(Options):
         self._options = kwargs.get("options").to_capabilities() if kwargs else None
 
     # 创建浏览器
-    def create_browser(self, url=None):
+    def create_browser(self,url=None):
         browser = self.driver_or_path[0]  # 浏览器函数
         executable_path = self.driver_or_path[1]  # 参数
         # desired_capabilities这个参数selenium真实需要的(也是options)
@@ -329,28 +326,19 @@ class Drive(Options):
     def driver(self):
         return self.__true_driver
 
-    def get(self, url):
-        self.__true_driver.get(url)
-        return self
-
-    def wait(self, s=0, e=0):
-        time.sleep(random.randint(s, e))
-        return self
-
-    def quit(self):
-        print("浏览器退出")
-        self.driver.quit()
-        return self
+    def get(self,url):
+        pass
 
 
-op = Options()
-op.doc()
+
+# op = Options()
+# op.doc()
 # op.zh_cn_utf8 = True
 # op.prefs=True
 # op.headless = True
 # op.disable_info_bar = True
 # op.win_max = True
-# d = Drive("chromedriver.exe",options=op)
+# d = Drive("chromedriver.exe")
 # d.create_browser()
 # d.get("https://www.baidu.com/")
 # d.wait(3,5)
