@@ -5,11 +5,10 @@
 # @software:PyCharm
 
 from __future__ import print_function
-from commonlyfunctions import currentTime, error_display
+from utils import currentTime, error_display
 from color import PrintColor
-from header import (
+from compat import (
     wraps,
-    sys,
     json
 )
 

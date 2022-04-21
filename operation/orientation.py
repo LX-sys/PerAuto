@@ -8,7 +8,7 @@
 '''
 
 from drive.drive import Options,Drive
-from header import time,random
+from compat import time,random
 from record import Record
 
 # 镜像网页驱动

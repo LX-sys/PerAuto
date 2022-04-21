@@ -4,14 +4,7 @@
 # @file:drive.py
 # @software:PyCharm
 from __future__ import print_function
-from header import (
-    sys,
-    time,
-    math,
-    random,
-    datetime,
-    # win32com,
-    pyautogui,
+from compat import (
     WebDriver,
     webdriver
 )

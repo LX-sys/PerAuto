@@ -1,17 +1,16 @@
 # -*- coding:utf-8 -*-
 # @time:2022/4/1916:49
 # @author:LX
-# @file:commonlyfunctions.py
+# @file:utils.py
 # @software:PyCharm
 from __future__ import print_function
 from color import PrintColor
-from header import (
+from compat import (
     datetime,
-    sys
 )
 
 '''
-    常用方法
+    实用方法
 '''
 
 # 返回当前时间
@@ -49,6 +48,12 @@ def error_display(e,end=""):
     if not(e is None):  # 显示具体报错信息
         print(PrintColor.red(e), end=end)
 
+
+# 判断当前python版本
+import sys
+
+
+# 判断当前操作系统
 
 
 if __name__ == '__main__':
