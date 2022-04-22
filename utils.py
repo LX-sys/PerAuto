@@ -18,6 +18,7 @@ from compat import (
     实用方法
 '''
 
+
 # 返回当前时间
 def currentTime(connector_before=":", connector_after=":", custom=None):
     '''
@@ -36,7 +37,7 @@ def currentTime(connector_before=":", connector_after=":", custom=None):
 
 
 # 递归显示信息
-def error_display(e,end=""):
+def error_display(e, end=""):
     exc_type, exc_value, exc_traceback_obj = sys.exc_info()
     # 获取递归的最大程度
     limit = sys.tracebacklimit if hasattr(sys, 'tracebacklimit') else None
@@ -47,30 +48,29 @@ def error_display(e,end=""):
         filename = co.co_filename
         name = co.co_name
         # 这句话格式可以实现报错后,在pycharm中点击跳转
-        print(PrintColor.red('  File "%s", line %d, in <%s>'% (filename, lineno, name)))
+        print(PrintColor.red('  File "%s", line %d, in <%s>' % (filename, lineno, name)))
         exc_traceback_obj = exc_traceback_obj.tb_next
         n += 1
-    if not(e is None):  # 显示具体报错信息
+    if not (e is None):  # 显示具体报错信息
         print(PrintColor.red(e), end=end)
 
 
 # 返回可用url
 def url(url_str):
-
     # 解析
     _url = urlparse(url_str)
 
-    if _url.scheme in ["http","https"]:
+    if _url.scheme in ["http", "https"]:
         return url_str
 
     if "file" not in url_str:
         if is_system_win:
             url_str = r"file://" + url_str
 
-        if is_system_mac or is_system_linux :
+        if is_system_mac or is_system_linux:
             url_str = r"file://" + _url.path
 
-    return url_str.replace("\\",r"/")
+    return url_str.replace("\\", r"/")
 
 
 # 返回可用驱动
@@ -79,15 +79,24 @@ def to_driver(driver_path):
         if u".exe" in driver_path:
             return driver_path
         else:
-            return driver_path+".exe"
+            return driver_path + ".exe"
 
     if is_system_mac:
         if u".exe" in driver_path:
-            return driver_path.replace(".exe","")
+            return driver_path.replace(".exe", "")
         else:
             return driver_path
     return driver_path
 
+
+# 返回HTML常用标签
+def get_html_label():
+    html = ["a", "p", "div", "select", "button", "span", "img", "form", "input","iframe","ins", "table",
+            "tr", "th", "td", "title", "ul", "li", "ol"]
+    h = ["h" + str(i) for i in range(1, 7)]
+    html.extend(h)
+
+    return html
 
 if __name__ == '__main__':
     try:

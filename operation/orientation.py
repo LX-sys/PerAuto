@@ -65,11 +65,10 @@ class Driver(MirrorWebDriver):
         return self
 
 
-
-
-# op = Options()
-# op.headless = True
-dri = Driver("chromedriver")
+op = Options()
+op.win_max = True
+dri = Driver("chromedriver",options=op)
+dri.doc()
 # https://www.baidu.com/
 dri.create_browser(r"file:///D:/code/my_html/automationCode.html")
 dri.wait(1,2)

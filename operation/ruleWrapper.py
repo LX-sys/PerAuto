@@ -31,12 +31,30 @@
 
     ......
 ]
-
 # 给文字的匹配规则,需要在父子节点反复搜索
 # 给id,xpath,...的匹配规则
 '''
+# -------------------------------------------------
+'''
+
+解决随机广告个数,随机按钮个数模型
+while True:
+    flag = True
+    try:
+        for 单条规则 in 规则列表:
+            具体操作(单条规则)
+            flag=False
+        [如果新打开的网页,则关闭,返回原来的网页]
+    except:
+        pass
+    if flag:
+        break
+# 常见的规则
+["No","1","0","Continue", "Yes","Skip"]
+'''
 
 from compat import threading
+from compat import webdriver
 
 # 规则包装器
 class RuleWrapperABC(object):
@@ -54,13 +72,11 @@ class RuleWrapperABC(object):
         self.__rule.extend(agrs)
         self.__rule_len = self.ruleLength()
 
-
     # 判断是否有匹配规则
     def is_rule(self):
         if self.__rule:
             return True
         return False
-
 
     # 规则长度
     def ruleLength(self):
@@ -133,6 +149,24 @@ class RuleWrapper(RuleWrapperABC):
             path_type, args = child_class.rule_path()[0], child_class.rule_path()[1]
             return [path_type], args if isinstance(args, list) else [args]
         return None
+
+    # 定位器
+    def locator(self,driver,path):
+        driver = webdriver.Chrome()
+        rule = self.rule_type()
+        if isinstance(path,str):
+            return driver.find_element(rule,path)
+
+        if isinstance(path,list):
+                # 元素字典
+                ele_dict = dict()
+                for r in rule:
+                    ele_dict[r] = driver.find_elements(r,path)
+                return ele_dict
+
+    # 定位器
+    def locators(self, driver, path):
+        pass
 
     def rule_path(self):
         if not self.is_rule():
@@ -276,6 +310,20 @@ def see(path_type, path):
         return e
 
 
+# 元素定位
+class ElementLocalization(object):
+    def __init__(self,driver):
+        self.__driver = driver
+
+    @property
+    def driver(self):
+        return self.__driver
+
+    def id(self,path):
+        id_ = ID(path)
+
+
+
 # s = LinkText("abc")
 # # print s.rule_path()
 # s_to = RuleWrapper("id", ["text", "s"])
@@ -288,18 +336,3 @@ def see(path_type, path):
 # ths = ThreadPoolExecutor(max_workers=10)
 # print ths
 # print ths.submit()
-from time import sleep
-
-# python2 的线程
-def hello(c=None):
-    i=0
-    print "{}->{}".format(i,c)
-    sleep(1)
-    i+=1
-from threadpool import ThreadPool,makeRequests
-data = ["a","b","c","d","e"]
-
-pool = ThreadPool(10)
-requests=makeRequests(hello,data)
-[pool.putRequest(req) for req in requests]
-pool.wait()

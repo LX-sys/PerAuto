@@ -7,6 +7,7 @@
 '''
     桥接器文件
 '''
+import threading
 
 from compat import (
     is_py2,
@@ -31,14 +32,30 @@ except ImportError:
 class ThreadPoolBridge(object):
     '''
         线程池,支持python2,python3
+        def hello(c=None, b=None):
+            i = 0
+            print("{}->{}->{}".format(i, c, b))
+            sleep(1)
+            i += 1
+            return c
 
+        t = ThreadPoolBridge(10)
+        t.addarg("aa")
+        t.addarg(["bb","b"])
+        t.addfunc(hello)
+        t.wait()
     '''
 
     def __init__(self, max_workers=7):
+        '''
+
+        :param max_workers: 最大线程数量
+        '''
         self.__max_workers = max_workers
         self.__th_obj = self._create_thread_obj()
         self.__args = list()
 
+    # 返回线程对象
     def thobj(self):
         return self.__th_obj
 
@@ -116,22 +133,6 @@ class ThreadPoolBridge(object):
             self.thobj().shutdown(True)
 
 
-from time import sleep
 
 
-def hello(c=None, b=None):
-    i = 0
-    print("{}->{}->{}".format(i, c, b))
-    sleep(1)
-    i += 1
-    return c
-
-
-data = [(["aa","sda"],None), "b", "c", "d", "e"]
-t = ThreadPoolBridge(10)
-# t.addarg("aa")
-# t.addarg(["bb","b"])
-# print t.args()
-t.addargs(["aa",["bb","b"]])
-t.addfunc(hello)
-t.wait()
+# bloggen
