@@ -53,10 +53,12 @@ while True:
 ["No","1","0","Continue", "Yes","Skip"]
 '''
 
-from compat import threading
-from compat import webdriver
+from compat import threading,webdriver
+from bridge import MyThread
+from utils import get_html_label
 
-# 规则包装器
+
+# 规则包装器抽象类
 class RuleWrapperABC(object):
     '''
 
@@ -128,7 +130,10 @@ class RuleWrapper(RuleWrapperABC):
             path_type, args = child[0], child[1]
         super(RuleWrapper, self).__init__(*args)
         self.__path_type = path_type
-
+        # 创建线程池
+        # self._th_pool = ThreadPoolBridge(3)
+        # 从当前元素向外探索的层数
+        self._explore = 2
 
     # 子类转父类
     def __chirldToparent(self, child_class):
@@ -155,6 +160,9 @@ class RuleWrapper(RuleWrapperABC):
         driver = webdriver.Chrome()
         rule = self.rule_type()
         if isinstance(path,str):
+            if rule == "id":
+                # 待写...
+                pass
             return driver.find_element(rule,path)
 
         if isinstance(path,list):

@@ -7,7 +7,9 @@
 '''
     桥接器文件
 '''
+import Queue
 import threading
+import queue
 
 from compat import (
     is_py2,
@@ -131,8 +133,77 @@ class ThreadPoolBridge(object):
             self.thobj().wait()
         if is_py3:
             self.thobj().shutdown(True)
+from time import sleep
+
+def test():
+    i=0
+    while i<5:
+        print ("->",i)
+        i+=1
+        sleep(1)
+    return i+2
+
+def test2():
+    i=0
+    while i<5:
+        print ("<-",i)
+        i+=1
+        sleep(1)
+    return i
 
 
+# 线程类
+class MyThread(threading.Thread):
+    def __init__(self,target=None,*argc):
+        super(MyThread, self).__init__()
+        self._target = target
+        self._argc = argc
+        self.__result = None
 
+    def run(self):
+        self.__result = self._target(*self._argc)
+
+    # 返回线程执行的结果
+    def get_result(self):
+        return self.__result
+
+
+# 自定义线程池
+class Threads(object):
+
+    def __init__(self,max_workers=7):
+        self.__max = max_workers
+        # 线程队列
+        self.__thread_que = Queue.Queue(self.__max)
+        # 无限大小的队列
+        self.__advantage_que = Queue.Queue(-1)
+
+    def add_work(self,f_,argc=None):
+        for ar in argc:
+            self.__advantage_que.put(MyThread(f_,ar))
+        
+        for _ in range(self.__thread_que.maxsize):
+            self.__thread_que.put(
+                self.__advantage_que.get()
+            )
+
+    def start(self):
+        while True:
+            t = self.__thread_que.get()
+            t.start()
+            t.join()
+            if self.__thread_que.empty():
+                break
+
+    # 添加工作
 
 # bloggen
+
+# s = Queue.Queue(3)
+# s.put(1)
+# s.put(2)
+# s.put(3)
+# print s.full()
+# print s.get()
+# print s.get()
+# print s.get()
