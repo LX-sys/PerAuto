@@ -24,10 +24,10 @@
     {"check":"xxx","btn":"xxx"}  -->这种格式表示页面只有复选框和按钮
     {"check_s":"xxx","btn":"xxx"}    -->这种格式表示页面只有多个复选按钮和按钮(执行顺序,先执行复选按钮,在执行按钮)
 
-    {"sendkey":"xxx",argc:[xxx]}  -->页面只有一个输入框,argc表示对应的信息列表
-    {"sendkey_s":"xxx" argc:[xxx]}  -->页面只有多个输入框,在每个输入框中输入信息
-    {"sendkey":"xxx","argc":[xxx],"btn":"xxxxx"}  -->页面只有一个输入框和按钮,argc表示对应的信息列表
-    {"sendkey_s":"xxx","argc":[xxx],"btn":"xxxxx"}  -->页面有多个输入框和按钮,argc表示对应的信息列表
+    {"input":"xxx",argc:[xxx]}  -->页面只有一个输入框,argc表示对应的信息列表
+    {"input_s":"xxx" argc:[xxx]}  -->页面只有多个输入框,在每个输入框中输入信息
+    {"input":"xxx","argc":[xxx],"btn":"xxxxx"}  -->页面只有一个输入框和按钮,argc表示对应的信息列表
+    {"input_s":"xxx","argc":[xxx],"btn":"xxxxx"}  -->页面有多个输入框和按钮,argc表示对应的信息列表
 
     ......
 ]
@@ -35,6 +35,8 @@
 # 给文字的匹配规则,需要在父子节点反复搜索
 # 给id,xpath,...的匹配规则
 '''
+
+from compat import threading
 
 # 规则包装器
 class RuleWrapperABC(object):
@@ -97,6 +99,11 @@ class RuleWrapperABC(object):
     def rule_type(self):
         pass
 
+    # 单个匹配,运行多个规则
+    # def run(self):
+        # threading.Thread
+
+
 class RuleWrapper(RuleWrapperABC):
 
     def __init__(self, path_type=None, *args):
@@ -105,15 +112,10 @@ class RuleWrapper(RuleWrapperABC):
             path_type, args = child[0], child[1]
         super(RuleWrapper, self).__init__(*args)
         self.__path_type = path_type
-        # print path_type
-        # print args
+
 
     # 子类转父类
     def __chirldToparent(self, child_class):
-
-        # 阻止父转子
-        # if isinstance(self, RuleWrapper):
-        #     raise ParentToChildError("Disallow parent class conversion to subclass!:{}".format(self))
 
         # 处理子类自己
         if isinstance(child_class, str):
@@ -274,8 +276,30 @@ def see(path_type, path):
         return e
 
 
-s = LinkText("abc")
-# print s.rule_path()
-s_to = RuleWrapper("id", ["text", "s"])
-cc = ID(s_to)
-print cc.rule_path()
+# s = LinkText("abc")
+# # print s.rule_path()
+# s_to = RuleWrapper("id", ["text", "s"])
+# cc = ID(s_to)
+# print cc.rule_path()
+
+# 线程池
+# from concurrent.futures import ThreadPoolExecutor
+#
+# ths = ThreadPoolExecutor(max_workers=10)
+# print ths
+# print ths.submit()
+from time import sleep
+
+# python2 的线程
+def hello(c=None):
+    i=0
+    print "{}->{}".format(i,c)
+    sleep(1)
+    i+=1
+from threadpool import ThreadPool,makeRequests
+data = ["a","b","c","d","e"]
+
+pool = ThreadPool(10)
+requests=makeRequests(hello,data)
+[pool.putRequest(req) for req in requests]
+pool.wait()

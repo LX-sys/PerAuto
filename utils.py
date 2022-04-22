@@ -72,6 +72,23 @@ def url(url_str):
 
     return url_str.replace("\\",r"/")
 
+
+# 返回可用驱动
+def to_driver(driver_path):
+    if is_system_win:
+        if u".exe" in driver_path:
+            return driver_path
+        else:
+            return driver_path+".exe"
+
+    if is_system_mac:
+        if u".exe" in driver_path:
+            return driver_path.replace(".exe","")
+        else:
+            return driver_path
+    return driver_path
+
+
 if __name__ == '__main__':
     try:
         # 1/0

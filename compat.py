@@ -15,10 +15,11 @@ import os
 import sys
 import time
 import math
-import chardet
 import random
-import platform
+import chardet
 import datetime
+import platform
+import threading
 import pyautogui
 import traceback
 from functools import wraps
@@ -53,13 +54,13 @@ is_system_linux = __system == "linux"
 is_system_mac = __system == "darwin"
 
 if is_py2:
-    import threading
     from urlparse import urlparse
+    # 这个模块需要单独下载 pip install threadpool
+    from threadpool import ThreadPool, makeRequests
 
 
 if is_py3:
     import asyncio
     from urllib.parse import urlparse
-
-
-# print(urlparse("https://www.baidu.com"))
+    # 这个方法是python3内置方法
+    from concurrent.futures import ThreadPoolExecutor

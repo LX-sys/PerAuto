@@ -11,11 +11,15 @@ from drive.drive import Options,Drive
 from compat import time,random
 from record import Record
 
+
+
 # 镜像网页驱动
 class MirrorWebDriver(Drive):
+    '''
+        这个类主要是避免的一个带装饰器的方法去调用另一个带装饰器的方法,从而触发多次装饰器
+    '''
     def __init__(self,driver_or_path=None, **kwargs):
         super(MirrorWebDriver, self).__init__(driver_or_path, **kwargs)
-
 
     def _get(self, url):
         self.driver.get(url)
@@ -35,6 +39,12 @@ class Driver(MirrorWebDriver):
     def __init__(self,driver_or_path=None, **kwargs):
         super(Driver, self).__init__(driver_or_path,**kwargs)
 
+    def title(self):
+        return self.driver.title
+
+    def url(self):
+        return self.driver.current_url
+
     @Record()
     def create_browser(self, url=None):
         return super(Driver, self).create_browser(url)
@@ -48,17 +58,19 @@ class Driver(MirrorWebDriver):
     def wait(self, s=0, e=0):
         super(Driver, self)._wait(s,e)
         return self
-    #
+
     @Record()
     def quit(self):
         self.driver.quit()
         return self
 
-# "chromedriver.exe"
+
+
+
 # op = Options()
 # op.headless = True
-# dri = Driver("chromedriver")
-# # dri.get("https://www.baidu.com/")
-# dri.create_browser(r"file:///D:/code/my_html/automationCode.html")
-# dri.wait(1,2)
-# dri.quit()
+dri = Driver("chromedriver")
+# https://www.baidu.com/
+dri.create_browser(r"file:///D:/code/my_html/automationCode.html")
+dri.wait(1,2)
+dri.quit()

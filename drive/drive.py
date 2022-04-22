@@ -5,13 +5,13 @@
 # @software:PyCharm
 from __future__ import print_function
 from color import PrintColor
-from error import DriveError,ExecutablePathError
+from utils import to_driver
+from error import DriveError, ExecutablePathError
 from compat import (
     sys,
     WebDriver,
     webdriver
 )
-
 
 # 处理编码问题
 try:
@@ -19,9 +19,6 @@ try:
     sys.setdefaultencoding(r"utf-8")
 except:
     pass
-
-
-
 
 
 # ORM驱动映射
@@ -132,10 +129,8 @@ class OptionVerification(object):
     # 添加配置
     def add(self):
         if not self.__chromeOptions.arguments and self._args_len == 1:
-            print("==")
             self.__chromeOptions.add_argument(*self._args)
         elif not self.__chromeOptions.experimental_options and self._args_len == 2:
-            print("----------")
             self.__chromeOptions.add_experimental_option(*self._args)
 
     def delete(self):
@@ -150,20 +145,6 @@ class OptionVerification(object):
         elif self._args_len == 2 and self.__chromeOptions.experimental_options:
             return {self._args[0]: self._args[1]}
         return None
-
-
-def tt(f_name):
-    def t(func):
-        def wrapper(*args, **kwargs):
-            self = args[0]
-            function_str_name = func.__name__
-            func(*args, **kwargs)
-            print("self:", self)
-            print("function_str_name:", function_str_name)
-
-        return wrapper
-
-    return t
 
 
 # 启动配置类(可以继承它,添加自己的方法)
@@ -237,7 +218,6 @@ class Options(object):
         return __to_capabilities
 
     # 显示可用的配置变量名称文档
-    @tt("s")
     def doc(self):
         print("---Available configuration names---")
         for op_key, op_value in self.options().items():
@@ -269,7 +249,7 @@ class Drive(Options):
         '''
         :param driver_path: 这里给出驱动路径,直接得到驱动,获取接收外部传入的驱动
         '''
-        self.driver_or_path = driver_or_path
+        self.driver_or_path = to_driver(driver_or_path)
         self.__true_driver = None  # 真实的驱动对象
         self._options = kwargs.get("options").to_capabilities() if kwargs else None
 
@@ -292,18 +272,3 @@ class Drive(Options):
 
     def _get(self, url):
         pass
-
-
-# op = Options()
-# op.doc()
-# op.zh_cn_utf8 = True
-# op.prefs=True
-# op.headless = True
-# op.disable_info_bar = True
-# op.win_max = True
-# d = Drive(r"chromedriver")
-# d.create_browser()
-# d.get("https://www.baidu.com/")
-# d.wait(3,5)
-# d.quit()
-

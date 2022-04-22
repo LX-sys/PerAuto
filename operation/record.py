@@ -136,7 +136,6 @@ class Record(object):
         return func_result["func_result"]
 
     def __call__(self, func):
-        print(func)
         func_name = func.__name__
         if not self.record_date.in_(func_name):
             self.record_date.add_func_name(func.__name__)
