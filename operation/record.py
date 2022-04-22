@@ -159,19 +159,8 @@ class Record(object):
 #     print("sd")
 
 
-# class A:
-#     @Record("ss")
-#     def hello(self, a, e=None):
-#
-#         print(self.__dict__)
-#         return self
-#
-    # @Record()
-    # def world(self):
-    #     # print("dd")
-    #     return self
-#
-#
-# a = A()
-# a.hello("das", [1, 23])
-# a.world()
+class A:
+    @Record()
+    def hello(self, a, e=None):
+        print("dasd")
+

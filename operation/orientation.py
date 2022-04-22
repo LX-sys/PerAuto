@@ -55,11 +55,10 @@ class Driver(MirrorWebDriver):
         return self
 
 # "chromedriver.exe"
-op = Options()
-op.headless = True
-dri = Driver("chromedriver")
-dri.create_browser()
-dri.get("https://www.baidu.com/")
-# dri.create_browser("file:///Users/lx/Documents/PersonificationAuto/test.html")
-dri.wait(3,4)
-dri.quit()
+# op = Options()
+# op.headless = True
+# dri = Driver("chromedriver")
+# # dri.get("https://www.baidu.com/")
+# dri.create_browser(r"file:///D:/code/my_html/automationCode.html")
+# dri.wait(1,2)
+# dri.quit()

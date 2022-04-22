@@ -36,111 +36,218 @@
 # 给id,xpath,...的匹配规则
 '''
 
-from abc import ABCMeta, abstractmethod
-
-
-# 规则包装器python2.7
+# 规则包装器
 class RuleWrapperABC(object):
-    # 抽象方法
-    __metaclass__ = ABCMeta
+    '''
 
-    def __init__(self, args_list):
+        这是一个伪抽象类,为了兼容python2,python3
+        python3 与python2
+    '''
+    def __init__(self, *agrs):
         '''
 
         :param args:匹配元素的方式
         '''
-        self.__rule = args_list
-        print("===",self.__rule)
-        if isinstance(args_list,list) or isinstance(args_list,tuple):
-            self.__rule_len = len(self.__rule)
-        else:
-            self.__rule_len = 1
+        self.__rule = list()
+        self.__rule.extend(agrs)
+        self.__rule_len = self.ruleLength()
+
 
     # 判断是否有匹配规则
-    def isRule(self):
+    def is_rule(self):
         if self.__rule:
             return True
         return False
 
+
     # 规则长度
     def ruleLength(self):
-        return self.__rule_len
+        return len(self.__rule)
+
 
     # 返回单个规则(默认返回首个)
     def rule(self):
-        if not self.isRule():
+        if not self.is_rule():
             return None
         if self.ruleLength() == 1:
-            return self.__rule
+            return self.__rule[0]
+
 
     # 返回单多个规则
     def rules(self):
-        if not self.isRule():
+        if not self.is_rule():
             return None
         return self.__rule
 
+
     # 返回规则与路径
+    # 伪抽象方法
     def rule_path(self):
-        if not self.isRule():
+        pass
+        # if not self.is_rule():
+        #     return None
+        # if self.ruleLength() == 1:
+        #     return self.rule_type(),self.rule()
+        # else:
+        #     return self.rule_type(),self.rules()
+
+
+    # 返回类型
+    # 伪抽象方法
+    def rule_type(self):
+        pass
+
+class RuleWrapper(RuleWrapperABC):
+
+    def __init__(self, path_type=None, *args):
+        child = self.__chirldToparent(path_type)
+        if not isinstance(child, str):
+            path_type, args = child[0], child[1]
+        super(RuleWrapper, self).__init__(*args)
+        self.__path_type = path_type
+        # print path_type
+        # print args
+
+    # 子类转父类
+    def __chirldToparent(self, child_class):
+
+        # 阻止父转子
+        # if isinstance(self, RuleWrapper):
+        #     raise ParentToChildError("Disallow parent class conversion to subclass!:{}".format(self))
+
+        # 处理子类自己
+        if isinstance(child_class, str):
+            return child_class
+
+        # 子转父
+        if isinstance(child_class, ID) \
+                or isinstance(child_class, CSS) \
+                or isinstance(child_class, XPATH) \
+                or isinstance(child_class, TagName) \
+                or isinstance(child_class, LinkText) \
+                or isinstance(child_class, ClassName) \
+                or isinstance(child_class, CssSelector) \
+                or isinstance(child_class, PartialLinkText):
+            path_type, args = child_class.rule_path()[0], child_class.rule_path()[1]
+            return [path_type], args if isinstance(args, list) else [args]
+        return None
+
+    def rule_path(self):
+        if not self.is_rule():
             return None
         if self.ruleLength() == 1:
-            return self.ruleType(),self.rule()
+            return self.rule_type(), self.rule()
         else:
-            return self.ruleType(),self.rules()
+            return self.rule_type(), self.rules()
 
-    @abstractmethod
-    def ruleType(self):
-        pass
+    def rule_type(self):
+        if isinstance(self.__path_type, str):
+            return self.__path_type
+        elif isinstance(self.__path_type, list):
+            return self.__path_type
+        else:
+            return ""
+
+    def __add__(self, other):
+        '''
+            实现规则相加
+            myid = ID("abc")
+            myxpath = XPATH("bb")
+            myid + myxpath =  ["id","xpath"],["abc","bb"]
+        :param other:
+        :return:
+        '''
+        # 匹配类型列表,匹配规则列表
+        type_list, argc_list = [], []
+        temp_list = [type_list, argc_list]
+
+        oneself = [self, other]
+
+        for temp_self in oneself:
+            for i in range(len(temp_list)):
+                type_or_path = temp_self.rule_path()[i]
+                if isinstance(type_or_path, str) and type_or_path not in type_list:
+                    temp_list[i].append(type_or_path)
+                if isinstance(type_or_path, list) and type_or_path not in argc_list:
+                    temp_list[i].extend(type_or_path)
+
+        return RuleWrapper(
+            type_list[0] if len(type_list) == 1 else type_list,
+            *argc_list)
 
 
 # id定位
-class ID(RuleWrapperABC):
+class ID(RuleWrapper):
 
-    def ruleType(self):
+    def __init__(self, *args):
+        super(ID, self).__init__(self.rule_type(), *args)
+
+    def rule_type(self):
         return "id"
 
 
 # xpath定位
-class XPATH(RuleWrapperABC):
+class XPATH(RuleWrapper):
 
-    def ruleType(self):
+    def __init__(self, *args):
+        super(XPATH, self).__init__(self.rule_type(), *args)
+
+    def rule_type(self):
         return "xpath"
 
 
 # css定位
-class CSS(RuleWrapperABC):
+class CSS(RuleWrapper):
 
-    def ruleType(self):
+    def __init__(self, *args):
+        super(CSS, self).__init__(self.rule_type(), *args)
+
+    def rule_type(self):
         return "css"
 
 
 # tag name定位
-class TagName(RuleWrapperABC):
-    def ruleType(self):
+class TagName(RuleWrapper):
+    def __init__(self, *args):
+        super(TagName, self).__init__(self.rule_type(), *args)
+
+    def rule_type(self):
         return "tag name"
 
 
 # class name定位
-class ClassName(RuleWrapperABC):
-    def ruleType(self):
+class ClassName(RuleWrapper):
+    def __init__(self, *args):
+        super(ClassName, self).__init__(self.rule_type(), *args)
+
+    def rule_type(self):
         return "class name"
 
 
 # css selector定位
-class CssSelector(RuleWrapperABC):
-    def ruleType(self):
+class CssSelector(RuleWrapper):
+    def __init__(self, *args):
+        super(CssSelector, self).__init__(self.rule_type(), *args)
+
+    def rule_type(self):
         return "css selector"
 
 
 # link text 定位
-class LinkText(RuleWrapperABC):
-    def ruleType(self):
+class LinkText(RuleWrapper):
+    def __init__(self, *args):
+        super(LinkText, self).__init__(self.rule_type(), *args)
+
+    def rule_type(self):
         return "link text"
 
 
 # partial link text定位
-class PartialLinkText(RuleWrapperABC):
-    def ruleType(self):
+class PartialLinkText(RuleWrapper):
+    def __init__(self, *args):
+        super(PartialLinkText, self).__init__(self.rule_type(), *args)
+
+    def rule_type(self):
         return "partial link text"
 
 
@@ -166,4 +273,9 @@ def see(path_type, path):
             raise TypeError("There is no such match!")
         return e
 
-print(see("id","pas").rule_path())
+
+s = LinkText("abc")
+# print s.rule_path()
+s_to = RuleWrapper("id", ["text", "s"])
+cc = ID(s_to)
+print cc.rule_path()

@@ -17,6 +17,7 @@ import time
 import math
 import chardet
 import random
+import platform
 import datetime
 import pyautogui
 import traceback
@@ -38,18 +39,27 @@ except ImportError:
 
 _version = sys.version_info
 
-is_py2 = (_version[0] == 2)
+is_py2 = _version[0] == 2
 
-is_py3 = (_version[0] == 3)
+is_py3 = _version[0] == 3
 
+# 操作系统
+__system= platform.system().lower()
 
+is_system_win = __system == "windows"
+
+is_system_linux = __system == "linux"
+
+is_system_mac = __system == "darwin"
 
 if is_py2:
-    print("当前python2")
     import threading
-
+    from urlparse import urlparse
 
 
 if is_py3:
-    print("当前python2")
     import asyncio
+    from urllib.parse import urlparse
+
+
+# print(urlparse("https://www.baidu.com"))

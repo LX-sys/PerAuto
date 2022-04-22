@@ -6,7 +6,12 @@
 from __future__ import print_function
 from color import PrintColor
 from compat import (
+    sys,
     datetime,
+    urlparse,
+    is_system_win,
+    is_system_linux,
+    is_system_mac
 )
 
 '''
@@ -49,15 +54,27 @@ def error_display(e,end=""):
         print(PrintColor.red(e), end=end)
 
 
-# 判断当前python版本
-import sys
+# 返回可用url
+def url(url_str):
 
+    # 解析
+    _url = urlparse(url_str)
 
-# 判断当前操作系统
+    if _url.scheme in ["http","https"]:
+        return url_str
 
+    if "file" not in url_str:
+        if is_system_win:
+            url_str = r"file://" + url_str
+
+        if is_system_mac or is_system_linux :
+            url_str = r"file://" + _url.path
+
+    return url_str.replace("\\",r"/")
 
 if __name__ == '__main__':
     try:
-        1/0
+        # 1/0
+        pass
     except Exception as e:
         error_display(e)

@@ -4,12 +4,14 @@
 # @file:drive.py
 # @software:PyCharm
 from __future__ import print_function
+from color import PrintColor
+from error import DriveError,ExecutablePathError
 from compat import (
+    sys,
     WebDriver,
     webdriver
 )
-import sys
-from color import PrintColor
+
 
 # 处理编码问题
 try:
@@ -19,41 +21,7 @@ except:
     pass
 
 
-# 异常基类
-class ABCError(Exception):
-    def __init__(self, v):
-        self.v = v
 
-    def __str__(self):
-        return self.v
-
-
-# 驱动异常
-class DriveError(ABCError):
-    def __init__(self, v):
-        super(DriveError, self).__init__(v)
-
-    def __str__(self):
-        return super(DriveError, self).__str__()
-
-
-# 驱动路径异常
-class ExecutablePathError(ABCError):
-
-    def __init__(self, *args):
-        super(ExecutablePathError, self).__init__(*args)
-
-    def __str__(self):
-        return super(ExecutablePathError, self).__str__()
-
-
-# options设置异常
-class OptionsError(ABCError):
-    def __init__(self, *args):
-        super(OptionsError, self).__init__(*args)
-
-    def __str__(self):
-        return super(OptionsError, self).__str__()
 
 
 # ORM驱动映射
