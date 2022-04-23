@@ -10,16 +10,24 @@
 from drive.drive import Options,Drive
 from compat import time,random
 from record import Record
+from utils import node_to_xpath
+from htmlanalyse import HTMLAnalyse
 
 
 
-# 镜像网页驱动
+# 镜像网页驱动(具体实现)
 class MirrorWebDriver(Drive):
     '''
         这个类主要是避免的一个带装饰器的方法去调用另一个带装饰器的方法,从而触发多次装饰器
     '''
     def __init__(self,driver_or_path=None, **kwargs):
         super(MirrorWebDriver, self).__init__(driver_or_path, **kwargs)
+
+    def title(self):
+        return self.driver.title
+
+    def url(self):
+        return self.driver.current_url
 
     def _get(self, url):
         self.driver.get(url)
@@ -38,12 +46,6 @@ class MirrorWebDriver(Drive):
 class Driver(MirrorWebDriver):
     def __init__(self,driver_or_path=None, **kwargs):
         super(Driver, self).__init__(driver_or_path,**kwargs)
-
-    def title(self):
-        return self.driver.title
-
-    def url(self):
-        return self.driver.current_url
 
     @Record()
     def create_browser(self, url=None):
@@ -71,5 +73,7 @@ dri = Driver("chromedriver",options=op)
 dri.doc()
 # https://www.baidu.com/
 dri.create_browser(r"file:///D:/code/my_html/automationCode.html")
+s = HTMLAnalyse(dri.driver)
+print s.is_page_contrast(interval_time=1)
 dri.wait(1,2)
 dri.quit()

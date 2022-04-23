@@ -6,14 +6,17 @@
 
 '''
     桥接器文件
+    线程池,兼容python2,python3
 '''
 import Queue
 import threading
-import queue
+
 
 from compat import (
     is_py2,
     is_py3,
+    time,
+    re
 )
 
 try:
@@ -33,7 +36,7 @@ except ImportError:
 # 线程池
 class ThreadPoolBridge(object):
     '''
-        线程池,支持python2,python3
+        线程池,兼容python2,python3
         def hello(c=None, b=None):
             i = 0
             print("{}->{}->{}".format(i, c, b))
@@ -41,11 +44,11 @@ class ThreadPoolBridge(object):
             i += 1
             return c
 
-        t = ThreadPoolBridge(10)
-        t.addarg("aa")
-        t.addarg(["bb","b"])
-        t.addfunc(hello)
-        t.wait()
+        __t = ThreadPoolBridge(10)
+        __t.addarg("aa")
+        __t.addarg(["bb","b"])
+        __t.addfunc(hello)
+        __t.wait()
     '''
 
     def __init__(self, max_workers=7):
@@ -133,29 +136,18 @@ class ThreadPoolBridge(object):
             self.thobj().wait()
         if is_py3:
             self.thobj().shutdown(True)
-from time import sleep
-
-def test():
-    i=0
-    while i<5:
-        print ("->",i)
-        i+=1
-        sleep(1)
-    return i+2
-
-def test2():
-    i=0
-    while i<5:
-        print ("<-",i)
-        i+=1
-        sleep(1)
-    return i
 
 
-# 线程类
+# 自定义线程类
 class MyThread(threading.Thread):
     def __init__(self,target=None,*argc):
         super(MyThread, self).__init__()
+        number_str = "".join(
+            re.findall(r"[0-9].*", self.getName())
+        )
+        # 重新定义线程名称,与函数名称一致
+        self.setName(target.__name__+"-"+number_str)
+        # 函数，参数，结果
         self._target = target
         self._argc = argc
         self.__result = None
@@ -168,7 +160,7 @@ class MyThread(threading.Thread):
         return self.__result
 
 
-# 自定义线程池
+# 自定义线程池(基于 生产者消费者模型)
 class Threads(object):
 
     def __init__(self,max_workers=7):
@@ -177,33 +169,72 @@ class Threads(object):
         self.__thread_que = Queue.Queue(self.__max)
         # 无限大小的队列
         self.__advantage_que = Queue.Queue(-1)
+        # 返回值列表
+        self._result_list = []
+
+    # 返回每个线程的结果
+    def result(self):
+        temp = []
+        for th in self._result_list:
+            v = th.get_result()
+            if v:
+                temp.append(v)
+        return temp
 
     def add_work(self,f_,argc=None):
+        '''
+
+        :param f_: 可调用函数
+        :param argc: 参数列表,参数个数等于线程数量
+        :return:
+        '''
         for ar in argc:
-            self.__advantage_que.put(MyThread(f_,ar))
-        
-        for _ in range(self.__thread_que.maxsize):
-            self.__thread_que.put(
-                self.__advantage_que.get()
-            )
+            # 判断队列是否已满,如果满了,就将溢出的线程转移到无限大小队列中
+            if self.__thread_que.full():
+                self.__advantage_que.put(MyThread(f_,ar))
+            else:
+                self.__thread_que.put(MyThread(f_,ar))
 
     def start(self):
         while True:
-            t = self.__thread_que.get()
-            t.start()
-            t.join()
-            if self.__thread_que.empty():
+
+            while self.__thread_que.qsize():
+                self._result_list.append(self.__thread_que.get())
+                self._result_list[-1].start()
+
+            # 等待
+            for th in self._result_list:
+                th.join()
+
+            if self.__advantage_que.empty():
                 break
 
-    # 添加工作
+            for _ in range(self.__thread_que.maxsize):
+                if self.__advantage_que.qsize():
+                    self.__thread_que.put(self.__advantage_que.get())
+                else:
+                    break
 
-# bloggen
 
-# s = Queue.Queue(3)
-# s.put(1)
-# s.put(2)
-# s.put(3)
-# print s.full()
-# print s.get()
-# print s.get()
-# print s.get()
+import random
+
+def test(a):
+    i=0
+    # while i<5:
+    print ("->",i,a)
+    i+=1
+    time.sleep(1)
+    return i+random.randint(1,7)
+
+def test2():
+    i=0
+    while i<5:
+        print ("<-",i)
+        i+=1
+        time.sleep(1)
+    return i
+
+t = Threads(2)
+t.add_work(test,["a","b","c","d","e"])
+t.start()
+print t.result()

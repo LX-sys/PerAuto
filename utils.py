@@ -4,6 +4,8 @@
 # @file:utils.py
 # @software:PyCharm
 from __future__ import print_function
+
+from selenium.common.exceptions import JavascriptException
 from color import PrintColor
 from compat import (
     sys,
@@ -11,9 +13,8 @@ from compat import (
     urlparse,
     is_system_win,
     is_system_linux,
-    is_system_mac
+    is_system_mac,
 )
-
 '''
     实用方法
 '''
@@ -73,8 +74,8 @@ def url(url_str):
     return url_str.replace("\\", r"/")
 
 
-# 返回可用驱动
-def to_driver(driver_path):
+# 返回可用驱动路径
+def to_driver_path(driver_path):
     if is_system_win:
         if u".exe" in driver_path:
             return driver_path
@@ -98,9 +99,90 @@ def get_html_label():
 
     return html
 
-if __name__ == '__main__':
+
+# xpath路径解释器
+def  node_to_xpath(driver,node):
+    js = '''
+    var s = document.getElementsByTagName("select")
+    // 获取兄弟元素名称
+    function getSameLevelName(node){
+        // 如果存在兄弟元素
+        if(node.previousSibling) {
+            let name = '',   // 返回的兄弟元素名称字符串
+            count = 1,    // 紧邻兄弟元素中相同名称元素个数
+            nodeName = node.nodeName,
+            sibling = node.previousSibling;
+            while(sibling){
+                if(sibling.nodeType == 1 && sibling.nodeType === node.nodeType && sibling.nodeName){
+                    if(nodeName == sibling.nodeName){
+                        // name
+                        // name += ++count;
+                        num_ = ++count
+                        name = "["+num_+"]"
+                    }else {
+                        // 重制相同紧邻节点名称节点个数
+                        count = 1;
+                        // 追加新的节点名称
+                        // name += '|' + sibling.nodeName.toUpperCase()
+                    }
+                }
+                sibling = sibling.previousSibling;
+            }
+            return name
+        }else {
+            // 不存在兄弟元素返回''
+            return ''
+        }
+    }
+
+    // XPath解释器
+    let Interpreter = (function(){
+        return function(node, wrap){
+            // 路径数组
+            let path = [],
+            // 如果不存在容器节点，默认为document
+            wrap_ = wrap || document;
+            // 如果当前节点等于容器节点
+            if(node === wrap_) {
+                if(wrap_.nodeType == 1) {
+                    path.push(wrap_.nodeName.toLowerCase())
+                }
+                return path
+            }
+            // 如果当前节点的父节点不等于容器节点
+            if(node.parentNode !== wrap_){
+                // 对当前节点的父节点执行遍历操作
+                path = arguments.callee(node.parentNode, wrap_)
+            }
+            // 如果当前节点的父元素节点与容器节点相同
+            else {
+                wrap_.nodeType == 1 && path.push(wrap_.nodeName.toLowerCase())
+            }
+            // 获取元素的兄弟元素的名称统计
+            let siblingsNames = getSameLevelName(node)
+            if(node.nodeType == 1){
+                path.push(node.nodeName.toLowerCase() + siblingsNames)
+            }
+            // 返回最终的路径数组结果
+            return path
+        }
+    })()
+    function xpath(node){
+        let path = Interpreter(document.querySelector(node))
+        return path.join('/')
+    }
+    return xpath(\"<node>\")
+    '''
+    js = js.replace("<node>",node)
     try:
-        # 1/0
-        pass
-    except Exception as e:
-        error_display(e)
+        return driver.execute_script(js)
+    except JavascriptException:
+        return None
+
+if __name__ == '__main__':
+    pass
+    # try:
+    #     # 1/0
+    #     pass
+    # except Exception as e:
+    #     error_display(e)

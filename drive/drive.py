@@ -5,7 +5,7 @@
 # @software:PyCharm
 from __future__ import print_function
 from color import PrintColor
-from utils import to_driver
+from utils import to_driver_path
 from error import DriveError, ExecutablePathError
 from compat import (
     sys,
@@ -249,7 +249,7 @@ class Drive(Options):
         '''
         :param driver_path: 这里给出驱动路径,直接得到驱动,获取接收外部传入的驱动
         '''
-        self.driver_or_path = to_driver(driver_or_path)
+        self.driver_or_path = to_driver_path(driver_or_path)
         self.__true_driver = None  # 真实的驱动对象
         self._options = kwargs.get("options").to_capabilities() if kwargs else None
 
