@@ -10,7 +10,7 @@
 from drive.drive import Options,Drive
 from compat import time,random
 from record import Record
-from utils import node_to_xpath
+from utils import node_to_xpath,js_xpath_find_eles
 from htmlanalyse import HTMLAnalyse
 
 
@@ -73,7 +73,8 @@ dri = Driver("chromedriver",options=op)
 dri.doc()
 # https://www.baidu.com/
 dri.create_browser(r"file:///D:/code/my_html/automationCode.html")
-s = HTMLAnalyse(dri.driver)
-print s.is_page_contrast(interval_time=1)
+print js_xpath_find_eles(dri.driver,'//h1')
+# s = HTMLAnalyse(dri.driver)
+# print s.is_page_contrast(interval_time=1)
 dri.wait(1,2)
 dri.quit()

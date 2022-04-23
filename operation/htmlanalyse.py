@@ -9,10 +9,8 @@
 '''
 import difflib
 import matplotlib.pyplot as plt
-import numpy as np
 from compat import (
     is_py2,
-    webdriver,
     time
 )
 
@@ -24,7 +22,7 @@ class HTMLAnalyse(object):
         self.__driver = driver
         # self.__driver = webdriver.Chrome()
 
-    # 返回网页的64编码
+    # 返回网页的64编码(带优化)
     def get_html_64(self):
         html_text = self.__driver.page_source
         old_64 = ""
@@ -66,9 +64,3 @@ class HTMLAnalyse(object):
             plt.clf()
             plt.close()
         return diff_list[-1] >= similarity
-
-# import difflib
-#
-# s="hello"
-# w="hello"
-# print

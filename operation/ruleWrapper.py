@@ -159,11 +159,18 @@ class RuleWrapper(RuleWrapperABC):
     def locator(self,driver,path):
         driver = webdriver.Chrome()
         rule = self.rule_type()
+
+        def __locator(dri,ru,pa):
+            return dri.find_elements(ru, pa)
+
+
         if isinstance(path,str):
             if rule == "id":
                 # 待写...
-                pass
-            return driver.find_element(rule,path)
+                main_th = MyThread(__locator,(driver,rule,path))
+                main_th.start()
+                main_th.join()
+
 
         if isinstance(path,list):
                 # 元素字典

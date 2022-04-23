@@ -101,7 +101,7 @@ def get_html_label():
 
 
 # xpath路径解释器
-def  node_to_xpath(driver,node):
+def node_to_xpath(driver,node):
     js = '''
     var s = document.getElementsByTagName("select")
     // 获取兄弟元素名称
@@ -178,6 +178,34 @@ def  node_to_xpath(driver,node):
         return driver.execute_script(js)
     except JavascriptException:
         return None
+
+# 在JS中使用查找元素
+'''
+    这个方法与原生selenium的find_elemnts("xpath","xx")效果差不多,
+    但是这个方法可以自动忽略,不显示的元素
+'''
+def js_xpath_find_eles(driver,path):
+    js ='''
+        var arr = [];
+        nodes=document.evaluate(\"<path>\", document);
+
+        var v = nodes.iterateNext();
+        while(v){
+            if(v.scrollHeight !=0 && v.scrollWidth !=0){
+                arr.push(v);
+            }
+            v = nodes.iterateNext();
+        }
+        return arr;
+    '''
+    js = js.replace("<path>", path)
+    try:
+        return driver.execute_script(js)
+    except JavascriptException:
+        return None
+
+# def js_xpath_find_eles_up(driver,path):
+
 
 if __name__ == '__main__':
     pass
