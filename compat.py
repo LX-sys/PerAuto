@@ -16,7 +16,7 @@ import sys
 import time
 import math
 import random
-import chardet
+# import chardet
 import datetime
 import platform
 import threading

@@ -234,7 +234,7 @@ def test2():
         time.sleep(1)
     return i
 
-t = Threads(2)
-t.add_work(test,["a","b","c","d","e"])
-t.start()
-print t.result()
+# t = Threads(2)
+# t.add_work(test,["a","b","c","d","e"])
+# t.start()
+# print t.result()

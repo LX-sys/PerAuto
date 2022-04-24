@@ -53,26 +53,35 @@ while True:
 ["No","1","0","Continue", "Yes","Skip"]
 '''
 
+import copy
 from compat import threading,webdriver
 from bridge import MyThread
 from utils import get_html_label
 
 
-# 规则包装器抽象类
+# 规则包装器伪抽象类
 class RuleWrapperABC(object):
     '''
 
         这是一个伪抽象类,为了兼容python2,python3
         python3 与python2
     '''
-    def __init__(self, *agrs):
+    def __init__(self,driver,*agrs):
         '''
 
         :param args:匹配元素的方式
         '''
+        self.__driver = driver
         self.__rule = list()
         self.__rule.extend(agrs)
         self.__rule_len = self.ruleLength()
+
+    def setDriver(self,dri):
+        self.__driver = dri
+
+    @property
+    def driver(self):
+        return self.__driver
 
     # 判断是否有匹配规则
     def is_rule(self):
@@ -84,14 +93,12 @@ class RuleWrapperABC(object):
     def ruleLength(self):
         return len(self.__rule)
 
-
     # 返回单个规则(默认返回首个)
     def rule(self):
         if not self.is_rule():
             return None
         if self.ruleLength() == 1:
             return self.__rule[0]
-
 
     # 返回单多个规则
     def rules(self):
@@ -104,84 +111,83 @@ class RuleWrapperABC(object):
     # 伪抽象方法
     def rule_path(self):
         pass
-        # if not self.is_rule():
-        #     return None
-        # if self.ruleLength() == 1:
-        #     return self.rule_type(),self.rule()
-        # else:
-        #     return self.rule_type(),self.rules()
-
 
     # 返回类型
     # 伪抽象方法
     def rule_type(self):
         pass
 
-    # 单个匹配,运行多个规则
-    # def run(self):
-        # threading.Thread
+    # 元素定位器,抽象方法
+    def locators(self, path,poll_number=5,interval=1):
+        pass
 
 
+# 包装器
 class RuleWrapper(RuleWrapperABC):
 
-    def __init__(self, path_type=None, *args):
-        child = self.__chirldToparent(path_type)
-        if not isinstance(child, str):
+    def __init__(self,driver, path_type=None, *args):
+        # 转换
+        if not self.is_child() and type(path_type) not in [str, list, tuple]:
+            child = self.__chirldToparent(path_type)
             path_type, args = child[0], child[1]
-        super(RuleWrapper, self).__init__(*args)
+        super(RuleWrapper, self).__init__(driver,*args)
         self.__path_type = path_type
+        # print self.__path_type
+        # 规则对应元素字典:
+        self.__rule_to_ele_dict = dict()
         # 创建线程池
         # self._th_pool = ThreadPoolBridge(3)
         # 从当前元素向外探索的层数
-        self._explore = 2
+        # self._explore = 2
+
+    # 判断当前创建实例是否为子类
+    def is_child(self):
+        if isinstance(self, ID) \
+                or isinstance(self, CSS) \
+                or isinstance(self, XPATH) \
+                or isinstance(self, TagName) \
+                or isinstance(self, LinkText) \
+                or isinstance(self, ClassName) \
+                or isinstance(self, CssSelector) \
+                or isinstance(self, PartialLinkText):
+            return True
+        return False
 
     # 子类转父类
     def __chirldToparent(self, child_class):
-
-        # 处理子类自己
-        if isinstance(child_class, str):
-            return child_class
-
+        # webdriver.Chrome().find_element().is_displayed()
         # 子转父
-        if isinstance(child_class, ID) \
-                or isinstance(child_class, CSS) \
-                or isinstance(child_class, XPATH) \
-                or isinstance(child_class, TagName) \
-                or isinstance(child_class, LinkText) \
-                or isinstance(child_class, ClassName) \
-                or isinstance(child_class, CssSelector) \
-                or isinstance(child_class, PartialLinkText):
-            path_type, args = child_class.rule_path()[0], child_class.rule_path()[1]
-            return [path_type], args if isinstance(args, list) else [args]
-        return None
+        path_type, args = child_class.rule_path()[0], child_class.rule_path()[1]
+        return [path_type], args if isinstance(args, list) else [args]
 
-    # 定位器
-    def locator(self,driver,path):
-        driver = webdriver.Chrome()
-        rule = self.rule_type()
+    # 元素定位器
+    def locators(self, path, poll_number=5, interval=0,is_reuse=True):
+        '''
 
-        def __locator(dri,ru,pa):
-            return dri.find_elements(ru, pa)
-
-
-        if isinstance(path,str):
-            if rule == "id":
-                # 待写...
-                main_th = MyThread(__locator,(driver,rule,path))
-                main_th.start()
-                main_th.join()
-
-
-        if isinstance(path,list):
-                # 元素字典
-                ele_dict = dict()
-                for r in rule:
-                    ele_dict[r] = driver.find_elements(r,path)
-                return ele_dict
-
-    # 定位器
-    def locators(self, driver, path):
-        pass
+        :param path: 元素的匹配路径
+        :param poll_number: 反复查找元素的次数
+        :param interval: 每次查找的时间间隔
+        :param is_reuse: 使用被相同的路径找到的元素
+        :return:
+        '''
+        if is_reuse and path in self.__rule_to_ele_dict:
+            return self.__rule_to_ele_dict[path]
+        eles = list()
+        for _ in range(poll_number):
+            eles.extend(
+                self.driver.find_elements(self.rule_type(), path)
+            )
+            if eles:
+                break
+        if len(eles) == 1:
+            self.__rule_to_ele_dict[path] = eles[0]
+        else:
+            #去除不显示的元素
+            copy_eles = copy.copy(eles)
+            for e in copy_eles:
+                if e.is_displayed():
+                    eles.remove(e)
+        return eles
 
     def rule_path(self):
         if not self.is_rule():
@@ -222,7 +228,7 @@ class RuleWrapper(RuleWrapperABC):
                 if isinstance(type_or_path, list) and type_or_path not in argc_list:
                     temp_list[i].extend(type_or_path)
 
-        return RuleWrapper(
+        return RuleWrapper(self.driver,
             type_list[0] if len(type_list) == 1 else type_list,
             *argc_list)
 
@@ -230,8 +236,8 @@ class RuleWrapper(RuleWrapperABC):
 # id定位
 class ID(RuleWrapper):
 
-    def __init__(self, *args):
-        super(ID, self).__init__(self.rule_type(), *args)
+    def __init__(self,driver=None, *args):
+        super(ID, self).__init__(driver,self.rule_type(), *args)
 
     def rule_type(self):
         return "id"
@@ -240,8 +246,8 @@ class ID(RuleWrapper):
 # xpath定位
 class XPATH(RuleWrapper):
 
-    def __init__(self, *args):
-        super(XPATH, self).__init__(self.rule_type(), *args)
+    def __init__(self,driver=None, *args):
+        super(XPATH, self).__init__(driver,self.rule_type(), *args)
 
     def rule_type(self):
         return "xpath"
@@ -250,8 +256,8 @@ class XPATH(RuleWrapper):
 # css定位
 class CSS(RuleWrapper):
 
-    def __init__(self, *args):
-        super(CSS, self).__init__(self.rule_type(), *args)
+    def __init__(self,driver=None, *args):
+        super(CSS, self).__init__(driver,self.rule_type(), *args)
 
     def rule_type(self):
         return "css"
@@ -259,8 +265,8 @@ class CSS(RuleWrapper):
 
 # tag name定位
 class TagName(RuleWrapper):
-    def __init__(self, *args):
-        super(TagName, self).__init__(self.rule_type(), *args)
+    def __init__(self,driver=None, *args):
+        super(TagName, self).__init__(driver,self.rule_type(), *args)
 
     def rule_type(self):
         return "tag name"
@@ -268,8 +274,8 @@ class TagName(RuleWrapper):
 
 # class name定位
 class ClassName(RuleWrapper):
-    def __init__(self, *args):
-        super(ClassName, self).__init__(self.rule_type(), *args)
+    def __init__(self,driver=None, *args):
+        super(ClassName, self).__init__(driver,self.rule_type(), *args)
 
     def rule_type(self):
         return "class name"
@@ -277,8 +283,8 @@ class ClassName(RuleWrapper):
 
 # css selector定位
 class CssSelector(RuleWrapper):
-    def __init__(self, *args):
-        super(CssSelector, self).__init__(self.rule_type(), *args)
+    def __init__(self,driver=None, *args):
+        super(CssSelector, self).__init__(driver,self.rule_type(), *args)
 
     def rule_type(self):
         return "css selector"
@@ -286,8 +292,8 @@ class CssSelector(RuleWrapper):
 
 # link text 定位
 class LinkText(RuleWrapper):
-    def __init__(self, *args):
-        super(LinkText, self).__init__(self.rule_type(), *args)
+    def __init__(self,driver=None, *args):
+        super(LinkText, self).__init__(driver,self.rule_type(), *args)
 
     def rule_type(self):
         return "link text"
@@ -295,31 +301,31 @@ class LinkText(RuleWrapper):
 
 # partial link text定位
 class PartialLinkText(RuleWrapper):
-    def __init__(self, *args):
-        super(PartialLinkText, self).__init__(self.rule_type(), *args)
+    def __init__(self,driver=None, *args):
+        super(PartialLinkText, self).__init__(driver,self.rule_type(), *args)
 
     def rule_type(self):
         return "partial link text"
 
 
-def see(path_type, path):
+def see(driver,path_type, path):
     if path_type.lower():
         if path_type == "id":
-            e = ID(path)
+            e = ID(driver,path)
         elif path_type == "xpath":
-            e = XPATH(path)
+            e = XPATH(driver,path)
         elif path_type == "css":
-            e = CSS(path)
+            e = CSS(driver,path)
         elif path_type == "tag name":
-            e = TagName(path)
+            e = TagName(driver,path)
         elif path_type == "class name":
-            e = ClassName(path)
+            e = ClassName(driver,path)
         elif path_type == "css selector":
-            e = CssSelector(path)
+            e = CssSelector(driver,path)
         elif path_type == "link text":
-            e = LinkText(path)
+            e = LinkText(driver,path)
         elif path_type == "partial link text":
-            e = PartialLinkText(path)
+            e = PartialLinkText(driver,path)
         else:
             raise TypeError("There is no such match!")
         return e
@@ -339,9 +345,18 @@ class ElementLocalization(object):
 
 
 
-# s = LinkText("abc")
-# # print s.rule_path()
-# s_to = RuleWrapper("id", ["text", "s"])
+s = ID("dir","abc")
+
+# print s.rule_path()
+# print s
+# pp = RuleWrapper("dri",s)
+# print pp.rule_path()
+s_to = RuleWrapper("driver","id", ["text", "s"])
+x = RuleWrapper("driver","id", "ppp")
+yy = x+s_to
+print yy.rule_path()
+
+# print s_to.rule_type()
 # cc = ID(s_to)
 # print cc.rule_path()
 

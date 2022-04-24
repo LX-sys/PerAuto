@@ -11,7 +11,8 @@ import difflib
 import matplotlib.pyplot as plt
 from compat import (
     is_py2,
-    time
+    time,
+webdriver
 )
 
 
@@ -20,7 +21,7 @@ class HTMLAnalyse(object):
 
     def __init__(self,driver):
         self.__driver = driver
-        # self.__driver = webdriver.Chrome()
+        self.__driver = webdriver.Chrome()
 
     # 返回网页的64编码(带优化)
     def get_html_64(self):
@@ -55,7 +56,7 @@ class HTMLAnalyse(object):
             diff_list.append(
                 int(difflib.SequenceMatcher(None, old_html, new_html).ratio() * 100)
             )
-        # 绘制网页波动折线图
+        # 绘制网页变化波动折线图
         if is_line_chart:
             x = [i*10 for i in range(1,poll_number+1)]
             plt.figure()

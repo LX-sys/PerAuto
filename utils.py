@@ -101,6 +101,9 @@ def get_html_label():
 
 
 # xpath路径解释器
+'''
+    给一个节点名称返回xpath路径
+'''
 def node_to_xpath(driver,node):
     js = '''
     var s = document.getElementsByTagName("select")
@@ -178,6 +181,7 @@ def node_to_xpath(driver,node):
         return driver.execute_script(js)
     except JavascriptException:
         return None
+
 
 # 在JS中使用查找元素
 '''
