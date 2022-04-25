@@ -25,8 +25,8 @@ import traceback
 from functools import wraps
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver
-
-
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.remote import remote_connection
 try:
     import win32com.client
 except ImportError:
@@ -64,3 +64,4 @@ if is_py3:
     from urllib.parse import urlparse
     # 这个方法是python3内置方法
     from concurrent.futures import ThreadPoolExecutor
+

@@ -54,9 +54,13 @@ while True:
 '''
 
 import copy
-from compat import threading,webdriver
 from bridge import MyThread
 from utils import get_html_label
+from compat import (
+    WebDriverWait,
+    threading,
+    webdriver
+)
 
 
 # 规则包装器伪抽象类
@@ -161,33 +165,37 @@ class RuleWrapper(RuleWrapperABC):
         return [path_type], args if isinstance(args, list) else [args]
 
     # 元素定位器
-    def locators(self, path, poll_number=5, interval=0,is_reuse=True):
+    def locators(self, path, timeout=5, poll_frequency=0.5,is_reuse=True):
         '''
 
         :param path: 元素的匹配路径
-        :param poll_number: 反复查找元素的次数
-        :param interval: 每次查找的时间间隔
+        :param timeout: 反复查找元素的次数
+        :param poll_frequency: 每次查找的时间间隔
         :param is_reuse: 使用被相同的路径找到的元素
         :return:
         '''
         if is_reuse and path in self.__rule_to_ele_dict:
             return self.__rule_to_ele_dict[path]
-        eles = list()
-        for _ in range(poll_number):
-            eles.extend(
-                self.driver.find_elements(self.rule_type(), path)
-            )
-            if eles:
-                break
-        if len(eles) == 1:
-            self.__rule_to_ele_dict[path] = eles[0]
+        # until这个方法参数是一个函数(这个函数必须有一个驱动参数)
+        element_list = WebDriverWait(self.driver,timeout=timeout,poll_frequency=poll_frequency).until(
+            lambda d:d.find_elements(self.rule_type(), path)
+        )
+        # for _ in range(poll_number):
+        #     eles.extend(
+        #         self.driver.find_elements(self.rule_type(), path)
+        #     )
+        #     if eles:
+        #         break
+        if len(element_list) == 1:
+            self.__rule_to_ele_dict[path] = element_list[0]
         else:
             #去除不显示的元素
-            copy_eles = copy.copy(eles)
-            for e in copy_eles:
+            copy_element_list = copy.copy(element_list)
+            for e in copy_element_list:
                 if e.is_displayed():
-                    eles.remove(e)
-        return eles
+                    element_list.remove(e)
+            del copy_element_list
+        return element_list
 
     def rule_path(self):
         if not self.is_rule():

@@ -66,15 +66,23 @@ class Driver(MirrorWebDriver):
         self.driver.quit()
         return self
 
-
+import logging
 op = Options()
 op.win_max = True
+# logging.basicConfig(level=logging.DEBUG)
 dri = Driver("chromedriver",options=op)
-dri.doc()
+# dri.doc()
+import requests
 # https://www.baidu.com/
 dri.create_browser(r"file:///D:/code/my_html/automationCode.html")
-print js_xpath_find_eles(dri.driver,'//h1')
+# print dri.driver.get_lx_sessionId()
+
+driver_url = 'http://localhost:9515/session'
+# response_session = requests.get(driver_url, json = s)
+# print(response_session.json())
+# print dri.driver.desired_capabilities
+# print js_xpath_find_eles(dri.driver,'//h1')
 # s = HTMLAnalyse(dri.driver)
 # print s.is_page_contrast(interval_time=1)
 dri.wait(1,2)
-dri.quit()
+# dri.quit()

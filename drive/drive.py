@@ -152,9 +152,14 @@ class Options(object):
     '''
         仿写原生Options
         启动配置类
+        这个类必须在浏览器驱动创建之前创建
         这个类可以被继承,自定义点击方法和下面一样
+        # 启动方法:
+            op = Options()
+            op.zh_cn_utf8 = True   # True启动,False关闭
+            op.prefs = True
     '''
-    # 启用配置
+    # 配置
     zh_cn_utf8 = OptionVerification("lang=zh_CN.UTF-8")
     win_max = OptionVerification("--start-maximized")
     headless = OptionVerification("--headless")
@@ -165,7 +170,7 @@ class Options(object):
         }
     })
 
-    # 返回所有的配置变量
+    # 返回所有的配置变量(包括用户继承的子类变量)
     def options(self):
         # 首先获取父类
         superclass = self.__class__.__bases__[0]
@@ -202,6 +207,7 @@ class Options(object):
         '''
 
         __to_capabilities = webdriver.ChromeOptions().to_capabilities()
+        # print(__to_capabilities)
         # 寻找args值所对应的key
         key = ""
         for k, v in __to_capabilities.items():
