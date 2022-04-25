@@ -7,9 +7,12 @@
     浏览器中断后继续执行
 
 '''
+import os
 import copy
-
 import json
+import socket
+import time
+
 from selenium.common.exceptions import InvalidArgumentException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.remote_connection import ChromeRemoteConnection
@@ -17,7 +20,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.remote.command import Command
 from selenium.webdriver.remote.webdriver import WebDriver
 import sys
-import os
+
 
 # 原生selenium3的变量
 _W3C_CAPABILITY_NAMES = frozenset([
@@ -73,6 +76,15 @@ def _make_w3c_caps(caps):
     return {"firstMatch": [{}], "alwaysMatch": always_match}
 
 
+# 判断一个端口是否占用
+def is_port_use(ip,port):
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((ip, int(port)))
+        s.shutdown(2)
+        return True
+    except:
+        return False
 
 class MyWebDriver(WebDriver):
 
@@ -120,9 +132,7 @@ class MyWebDriver(WebDriver):
                       "desiredCapabilities": capabilities}
 
         if not self.take_over():
-            print "-djklasdjklasd",parameters
             response = self.execute(Command.NEW_SESSION, parameters)
-            print "-----"
             self._parameters = response
             with open(self.__take_over_path,"r") as f:
                 c = json.load(f)
@@ -169,11 +179,13 @@ class Dri(object):
         if os.path.isfile(r"D:\code\PerAuto\port_session.json") is False:
             with open(r"D:\code\PerAuto\port_session.json", "w") as f:
                 json.dump({"port":None,"take_over":None},f)
-            print "-----"
 
         # 读取
         with open(r"D:\code\PerAuto\port_session.json","r") as f:
-            self.conf = json.load(f)
+            try:
+                self.conf = json.load(f)
+            except ValueError:
+                self.conf = {"port": None, "take_over": None}
 
         # 存储接管的必须信息
         if not self.conf:
@@ -185,7 +197,7 @@ class Dri(object):
             self.conf["port"]=self.service.service_url
             with open(r"D:\code\PerAuto\port_session.json","w") as f:
                 json.dump(self.conf,f)
-        print self.conf["port"]
+        # print self.conf["port"]
         self.cr = ChromeRemoteConnection(remote_server_addr=self.conf["port"],
                                     keep_alive=True)
         self.__driver = MyWebDriver(command_executor=self.cr,take_over=self.conf["take_over"],
@@ -194,6 +206,10 @@ class Dri(object):
     def get(self,url):
         self.__driver.get(url)
 
+    def quit(self):
+        self.__driver.quit()
 
 d = Dri()
 d.get("https://www.baidu.com/")
+# time.sleep(2)
+# d.quit()
