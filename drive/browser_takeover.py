@@ -4,7 +4,9 @@
 # @file:browser_takeover.py
 # @software:PyCharm
 '''
-    浏览器中断后继续执行
+
+    浏览器中断后继续执行(类似接管)
+    但是在操作上比接管更加方便
 
 '''
 import os
