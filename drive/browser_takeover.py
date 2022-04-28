@@ -15,6 +15,8 @@ import json
 import socket
 import time
 
+import requests
+from requests import ConnectionError
 from selenium.common.exceptions import InvalidArgumentException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.remote_connection import ChromeRemoteConnection
@@ -177,13 +179,14 @@ class MyWebDriver(WebDriver):
 
 class Dri(object):
     def __init__(self,executable_path="chromedriver.exe"):
+        
+        self._json_path = "port_session.json"
         # 创建文件
-        if os.path.isfile(r"D:\code\PerAuto\port_session.json") is False:
-            with open(r"D:\code\PerAuto\port_session.json", "w") as f:
-                json.dump({"port":None,"take_over":None},f)
+        if os.path.isfile(self._json_path) is False:
+            self.clear_json()
 
         # 读取
-        with open(r"D:\code\PerAuto\port_session.json","r") as f:
+        with open(self._json_path,"r") as f:
             try:
                 self.conf = json.load(f)
             except ValueError:
@@ -193,17 +196,43 @@ class Dri(object):
         if not self.conf:
             self.conf = {"port":None,"take_over":None}
 
-        if self.conf["port"] is None:
+        is_b_conntion = self.is_browser_connection()
+        print is_b_conntion
+        # if not is_b_conntion:
+        #     self.clear_json()
+
+        if is_b_conntion:
+            print "--"
+            self.clear_json()
             self.service = Service(executable_path=executable_path,port=0)
             self.service.start()
             self.conf["port"]=self.service.service_url
-            with open(r"D:\code\PerAuto\port_session.json","w") as f:
+            with open(self._json_path,"w") as f:
                 json.dump(self.conf,f)
         # print self.conf["port"]
         self.cr = ChromeRemoteConnection(remote_server_addr=self.conf["port"],
                                     keep_alive=True)
         self.__driver = MyWebDriver(command_executor=self.cr,take_over=self.conf["take_over"],
-                                    take_over_path=r"D:\code\PerAuto\port_session.json")
+                                    take_over_path=self._json_path)
+
+    # 判断浏览器是否处于连接状态(一般返回True,需要清理json文件)
+    def is_browser_connection(self):
+        local_url_port = self.conf["port"]
+
+        if local_url_port is None:
+            return True
+        try:
+            response = requests.get(local_url_port, timeout=10)
+            print response.status_code
+            if response.status_code == 404: # 进程还存在,只是无法访问
+                return True
+        except ConnectionError:
+            return True
+        return False
+
+    def clear_json(self):
+        with open(self._json_path, "w") as f:
+            json.dump({"port": None, "take_over": None}, f)
 
     def get(self,url):
         self.__driver.get(url)
@@ -213,5 +242,6 @@ class Dri(object):
 
 d = Dri()
 d.get("https://www.baidu.com/")
+# d.get(r"D:\code\my_html\automationCode.html")
 # time.sleep(2)
 # d.quit()
