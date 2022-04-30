@@ -40,9 +40,9 @@ url = u'http://localhost:58728/session/'+"aca5ffe374873ab179d3024ca75cf4b5"+u'/u
 # 访问我的博客的请求参数
 # https://www.baidu.com/
 # D:\code\my_html\automationCode.html
-value = {"url": r"D:\code\my_html\automationCode.html", "sessionId": "aca5ffe374873ab179d3024ca75cf4b5"}
-response_blog = requests.get(url = url,json = value)
-print response_blog.status_code
+# value = {"url": r"D:\code\my_html\automationCode.html", "sessionId": "aca5ffe374873ab179d3024ca75cf4b5"}
+# response_blog = requests.get(url = url,json = value)
+# print response_blog.status_code
 # print(response_blog.json())
 
 

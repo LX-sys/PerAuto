@@ -13,20 +13,22 @@
 import re
 import os
 import sys
+import copy
+import json
 import time
-import math
-import random
-# import chardet
-import datetime
+import socket
+import base64
+import requests
 import platform
-import threading
-import pyautogui
-import traceback
-from functools import wraps
-from selenium import webdriver
+from requests import ConnectionError, ReadTimeout
+from selenium.common.exceptions import InvalidArgumentException
+from selenium.webdriver.chrome.remote_connection import ChromeRemoteConnection
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.remote.command import Command
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote import remote_connection
+
 try:
     import win32com.client
 except ImportError:

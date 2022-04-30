@@ -9,21 +9,28 @@
     但是在操作上比接管更加方便
 
 '''
-import os
-import copy
-import json
-import socket
-import time
 
-import requests
-from requests import ConnectionError, ReadTimeout
-from selenium.common.exceptions import InvalidArgumentException
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.remote_connection import ChromeRemoteConnection
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.remote.command import Command
-from selenium.webdriver.remote.webdriver import WebDriver
-import sys
+
+from compat import (
+    os,
+    copy,
+    json,
+    socket,
+    base64,
+    platform,
+    requests,
+    ConnectionError, ReadTimeout,
+    InvalidArgumentException,
+    ChromeRemoteConnection,
+    Service,
+    Command,
+    WebDriver
+)
+
+# 这个不是报错
+from selenium import __version__
+
+
 
 
 # 原生selenium3的变量
@@ -89,6 +96,51 @@ def is_port_use(ip,port):
         return True
     except:
         return False
+
+
+class MyChromeRemoteConnection(ChromeRemoteConnection):
+
+    headers_ = None  # 请求头
+
+    def __init__(self,*args,**kwargs):
+
+        super(MyChromeRemoteConnection, self).__init__(*args,**kwargs)
+
+    @classmethod
+    def get_remote_connection_headers(cls, parsed_url, keep_alive=False):
+        print "=========================="
+        """
+        Get headers for remote request.
+
+        :Args:
+         - parsed_url - The parsed url
+         - keep_alive (Boolean) - Is this a keep-alive connection (default: False)
+        """
+
+        system = platform.system().lower()
+        if system == "darwin":
+            system = "mac"
+
+        headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json;charset=UTF-8',
+            'User-Agent': 'selenium/{} (python {})'.format(__version__, system)
+        }
+
+        if parsed_url.username:
+            base64string = base64.b64encode('{0.username}:{0.password}'.format(parsed_url).encode())
+            headers.update({
+                'Authorization': 'Basic {}'.format(base64string.decode())
+            })
+
+        if keep_alive:
+            headers.update({
+                'Connection': 'keep-alive'
+            })
+        #
+        cls.headers_ = headers
+        return headers
+
 
 class MyWebDriver(WebDriver):
 
@@ -177,6 +229,7 @@ class MyWebDriver(WebDriver):
 # sessionId = c.session_id
 # print sessionId
 
+
 class Dri(object):
     def __init__(self,executable_path="chromedriver.exe",is_take_over=False):
         '''
@@ -208,17 +261,18 @@ class Dri(object):
         else:
             is_b_connection = self.is_browser_connection()
 
+        # 是否需要创建新的服务
         if not is_b_connection:
-
             self.clear_json()
             self.service = Service(executable_path=executable_path,port=0)
             self.service.start()
-            self.conf["port"]=self.service.service_url
+            self.conf["port"] = self.service.service_url
             with open(self._json_path,"w") as f:
                 json.dump(self.conf,f)
             # print self.conf["port"]
-        self.cr = ChromeRemoteConnection(remote_server_addr=self.conf["port"],
+        self.cr = MyChromeRemoteConnection(remote_server_addr=self.conf["port"],
                                     keep_alive=True)
+
         self.__driver = MyWebDriver(command_executor=self.cr,take_over=self.conf["take_over"],
                                     take_over_path=self._json_path)
 
@@ -257,28 +311,25 @@ class Dri(object):
             return False
         return False
 
-        # try:
-        #     response = requests.get(local_url_port, timeout=10)
-        #     print response.status_code
-        #     if response.status_code == 404: # 进程还存在,只是无法访问
-        #         return "new_create"
-        # except ConnectionError:
-        #     return "new_create"
-
-
     def clear_json(self):
         with open(self._json_path, "w") as f:
             json.dump({"port": None, "take_over": None}, f)
         self.conf = {"port": None, "take_over": None}
 
+    def headers(self):
+        return self.cr.headers_
+
     def get(self,url):
         self.__driver.get(url)
+        print "===>", self.__driver.log_types
 
     def quit(self):
         self.__driver.quit()
 
 d = Dri(is_take_over=True)
 # d.get("https://www.baidu.com/")
-d.get(r"D:\code\my_html\automationCode.html")
+d.get("https://www.cnblogs.com/wwwwtt/p/15892233.html")
+# d.get(r"D:\code\my_html\automationCode.html")
+print d.headers()
 # time.sleep(2)
 # d.quit()
