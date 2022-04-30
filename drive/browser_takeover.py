@@ -16,7 +16,7 @@ import socket
 import time
 
 import requests
-from requests import ConnectionError
+from requests import ConnectionError, ReadTimeout
 from selenium.common.exceptions import InvalidArgumentException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.remote_connection import ChromeRemoteConnection
@@ -178,9 +178,16 @@ class MyWebDriver(WebDriver):
 # print sessionId
 
 class Dri(object):
-    def __init__(self,executable_path="chromedriver.exe"):
+    def __init__(self,executable_path="chromedriver.exe",is_take_over=False):
+        '''
+
+        :param executable_path: 浏览器驱动路径
+        :param is_take_over: 浏览器是否需要接管
+        '''
         
-        self._json_path = "port_session.json"
+        self._json_path = "session.json"
+        # 接管
+        self.set_take_over = is_take_over
         # 创建文件
         if os.path.isfile(self._json_path) is False:
             self.clear_json()
@@ -196,20 +203,20 @@ class Dri(object):
         if not self.conf:
             self.conf = {"port":None,"take_over":None}
 
-        is_b_conntion = self.is_browser_connection()
-        print is_b_conntion
-        # if not is_b_conntion:
-        #     self.clear_json()
+        if not self.set_take_over:
+            is_b_connection = False
+        else:
+            is_b_connection = self.is_browser_connection()
 
-        if is_b_conntion:
-            print "--"
+        if not is_b_connection:
+
             self.clear_json()
             self.service = Service(executable_path=executable_path,port=0)
             self.service.start()
             self.conf["port"]=self.service.service_url
             with open(self._json_path,"w") as f:
                 json.dump(self.conf,f)
-        # print self.conf["port"]
+            # print self.conf["port"]
         self.cr = ChromeRemoteConnection(remote_server_addr=self.conf["port"],
                                     keep_alive=True)
         self.__driver = MyWebDriver(command_executor=self.cr,take_over=self.conf["take_over"],
@@ -217,22 +224,52 @@ class Dri(object):
 
     # 判断浏览器是否处于连接状态(一般返回True,需要清理json文件)
     def is_browser_connection(self):
+        '''
+            判断浏览器是否可以继续连接
+            重新建立连接
+                -- 进程不存在
+                -- 进程存在,也没有任何页面
+            继续连接:
+                -- 进程存在,且有页面存在
+        :return: bool
+        '''
+        # 本地端口
         local_url_port = self.conf["port"]
 
         if local_url_port is None:
-            return True
+            return False
+
+        # 本地session
+        sessionId = self.conf["take_over"]["value"]["sessionId"]
+        print "local_url_port:",local_url_port
+        print "sessionId",sessionId
+
+        url = local_url_port+ "/session/" + sessionId + u'/url'
+        value = {"url": r"session_test.html", "sessionId": sessionId}
+
         try:
-            response = requests.get(local_url_port, timeout=10)
-            print response.status_code
-            if response.status_code == 404: # 进程还存在,只是无法访问
+            response = requests.get(url=url, json=value,timeout=5)
+            if response.status_code == 200:
                 return True
-        except ConnectionError:
-            return True
+            if response.status_code in [404,500]:
+                return False
+        except (ConnectionError,ReadTimeout):
+            return False
         return False
+
+        # try:
+        #     response = requests.get(local_url_port, timeout=10)
+        #     print response.status_code
+        #     if response.status_code == 404: # 进程还存在,只是无法访问
+        #         return "new_create"
+        # except ConnectionError:
+        #     return "new_create"
+
 
     def clear_json(self):
         with open(self._json_path, "w") as f:
             json.dump({"port": None, "take_over": None}, f)
+        self.conf = {"port": None, "take_over": None}
 
     def get(self,url):
         self.__driver.get(url)
@@ -240,8 +277,8 @@ class Dri(object):
     def quit(self):
         self.__driver.quit()
 
-d = Dri()
-d.get("https://www.baidu.com/")
-# d.get(r"D:\code\my_html\automationCode.html")
+d = Dri(is_take_over=True)
+# d.get("https://www.baidu.com/")
+d.get(r"D:\code\my_html\automationCode.html")
 # time.sleep(2)
 # d.quit()
