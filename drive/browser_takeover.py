@@ -26,7 +26,7 @@ from compat import (
     Command,
     WebDriver
 )
-
+from utils import to_driver_path
 # 这个不是报错
 from selenium import __version__
 
@@ -229,7 +229,6 @@ class MyWebDriver(WebDriver):
 # sessionId = c.session_id
 # print sessionId
 
-
 class Dri(object):
     def __init__(self,executable_path="chromedriver.exe",is_take_over=False):
         '''
@@ -264,7 +263,7 @@ class Dri(object):
         # 是否需要创建新的服务
         if not is_b_connection:
             self.clear_json()
-            self.service = Service(executable_path=executable_path,port=0)
+            self.service = Service(executable_path=to_driver_path(executable_path),port=0)
             self.service.start()
             self.conf["port"] = self.service.service_url
             with open(self._json_path,"w") as f:
@@ -321,7 +320,6 @@ class Dri(object):
 
     def get(self,url):
         self.__driver.get(url)
-        print "===>", self.__driver.log_types
 
     def quit(self):
         self.__driver.quit()

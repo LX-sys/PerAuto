@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from compat import (
     is_py2,
     time,
-webdriver
+    webdriver
 )
 
 
