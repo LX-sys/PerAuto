@@ -230,11 +230,29 @@ class MyWebDriver(WebDriver):
 # print sessionId
 
 class Dri(object):
-    def __init__(self,executable_path="chromedriver.exe",is_take_over=False):
+    def __init__(self,executable_path="chromedriver",browser_handle=0,is_take_over=False):
         '''
 
         :param executable_path: 浏览器驱动路径
+        :param browser_handle: 浏览器句柄
         :param is_take_over: 浏览器是否需要接管
+
+        实现浏览器接管的流程
+        [session,session,session,...]
+                    启动程序
+                      |
+                读取session文件(获取到浏览器session列表)
+                      |
+           使用句柄从session列表获取真实存在的浏览器
+                 |                              |
+                 |浏览器不存在                    |浏览器存在
+                 |                              |
+    重新生成新的浏览器session覆盖原来的位置
+                            |                   |
+                            |                   |
+                            \                  |
+                              \              |
+                                 打开浏览器
         '''
         
         self._json_path = "session.json"
@@ -324,9 +342,9 @@ class Dri(object):
     def quit(self):
         self.__driver.quit()
 
-d = Dri(is_take_over=True)
-# d.get("https://www.baidu.com/")
-d.get("https://www.cnblogs.com/wwwwtt/p/15892233.html")
+d = Dri(is_take_over=False)
+d.get("https://www.baidu.com/")
+# d.get("https://www.cnblogs.com/wwwwtt/p/15892233.html")
 # d.get(r"D:\code\my_html\automationCode.html")
 print d.headers()
 # time.sleep(2)
