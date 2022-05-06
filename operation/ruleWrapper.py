@@ -40,16 +40,17 @@
 解决随机广告个数,随机按钮个数模型
 while True:
     flag = True
-    try:
+    [try:
         for 单条规则 in 规则列表:
             具体操作(单条规则)
             flag=False
-        [如果新打开的网页,则关闭,返回原来的网页]
+        [新打开的网页,则关闭,返回原来的网页]
+        [定位元素位置]
     except:
-        pass
+        pass]
     if flag:
         break
-# 常见的规则
+# 常见按钮的规则
 ["No","1","0","Continue", "Yes","Skip"]
 '''
 

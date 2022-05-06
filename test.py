@@ -72,3 +72,8 @@ url = u'http://localhost:58728/session/'+"aca5ffe374873ab179d3024ca75cf4b5"+u'/u
 #     print "占用"
 # except:
 #     print "不占用"
+
+
+s={"0":1}
+s.update({"4":3})
+print s
