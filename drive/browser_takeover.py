@@ -26,6 +26,7 @@ from compat import (
     Command,
     WebDriver
 )
+import copy
 from utils import to_driver_path
 # 这个不是报错
 from selenium import __version__
@@ -146,14 +147,14 @@ class MyWebDriver(WebDriver):
 
     def __init__(self,command_executor='http://127.0.0.1:4444/wd/hub',browser_handle=0,
                  desired_capabilities=None, browser_profile=None, proxy=None,
-                 keep_alive=False, file_detector=None, options=None,take_over=None,take_over_path=None):
+                 keep_alive=False, file_detector=None, options=None,take_over_path=None):
 
         # 浏览器句柄
-        self.__browser_handle = str(browser_handle)
+        self.__browser_handle = browser_handle
 
         with open(take_over_path,"r") as f:
             self.__take_over = json.load(f)
-        print "---------->",self.__take_over
+        # print "---------->",self.__take_over
         self.__take_over_path=take_over_path
         self._parameters = None
 
@@ -196,11 +197,14 @@ class MyWebDriver(WebDriver):
         if not self.take_over():
             response = self.execute(Command.NEW_SESSION, parameters)
             self._parameters = response
-            with open(self.__take_over_path,"r") as f:
-                c = json.load(f)
-                with open(self.__take_over_path,"w") as f2:
-                    c[self.handle()]["take_over"] = response
-                    json.dump(c,f2)
+            self.__take_over[self.handle()]["take_over"] = response
+            with open(self.__take_over_path, "w") as f2:
+                json.dump(self.__take_over, f2)
+            # with open(self.__take_over_path,"r") as f:
+            #     c = json.load(f)
+            #     with open(self.__take_over_path,"w") as f2:
+            #         c[self.handle()]["take_over"] = response
+            #         json.dump(c,f2)
         else:
             response = self.take_over()
 
@@ -236,7 +240,7 @@ class MyWebDriver(WebDriver):
 # print sessionId
 
 class Dri(object):
-    def __init__(self,executable_path="chromedriver",browser_handle=0,is_take_over=False):
+    def __init__(self,executable_path="chromedriver",browser_handle=None,is_take_over=False):
         '''
 
         :param executable_path: 浏览器驱动路径
@@ -261,52 +265,58 @@ class Dri(object):
                                  打开浏览器
         '''
         # 浏览器句柄
-        self.__browser_handle = str(browser_handle)
-        self._json_path = "session.json"
+        self.__browser_handle = 0 if browser_handle is None else browser_handle
+        self.__json_path = "session.json"
         # 接管
         self.set_take_over = is_take_over
+        # 初始文件
+        init_file = False
         # 创建文件
-        if os.path.isfile(self._json_path) is False:
-            # self.clear_json()
-            with open(self._json_path,'w') as f:
-                json.dump(self.new_session_struct(browser_handle), f)
-            self.conf = self.new_session_struct(browser_handle)
+        if os.path.isfile(self.session_path()) is False:
+            init_file = True
         else:
             # 读取
-            with open(self._json_path,"r") as f:
+            with open(self.session_path(),"r") as f:
                 try:
                     self.conf = json.load(f)
                 except ValueError:
-                    # self.conf = {"port": None, "take_over": None}
-                    self.conf = self.new_session_struct()
+                    init_file = True
 
-        # 存储接管的必须信息
-        if not self.conf:
-            # self.conf = {"port":None,"take_over":None}
-            self.conf = self.new_session_struct(browser_handle)
-
-        if not self.set_take_over:
-            is_b_connection = False
-            # 缺少一个句柄判断
+        if init_file:
+            with open(self.session_path(),'w') as f:
+                self.conf = self.new_session_struct(self.handle())
+                json.dump(self.conf, f)
         else:
-            # 检测链接
-            is_b_connection = self.is_browser_connection()
+            # 检测所有句柄的可连接性
+            self.is_browser_connection()
+
+        addr = self.conf.get(self.handle(), None)
+
+        # 如果是启用接管,而且是第一次创建浏览器则为 False
+        if self.set_take_over:
+            is_b_connection = False if (addr is None) or (self.conf == self.new_session_struct(self.handle())) \
+                else True
+        else:
+            is_b_connection = False
 
         # 是否需要创建新的服务
         if not is_b_connection:
-            self.clear_json()
+            self.create_new_browser()
             self.service = Service(executable_path=to_driver_path(executable_path),port=0)
             self.service.start()
-            # self.conf["port"] = self.service.service_url
             self.conf[self.handle()]["port"] = self.service.service_url
-            with open(self._json_path,"w") as f:
+            with open(self.session_path(),"w") as f:
                 json.dump(self.conf,f)
-            # print self.conf["port"]
+
+
         self.cr = MyChromeRemoteConnection(remote_server_addr=self.conf[self.handle()]["port"],
                                     keep_alive=True)
 
-        self.__driver = MyWebDriver(command_executor=self.cr,take_over=self.conf[self.handle()]["take_over"],
-                                    take_over_path=self._json_path)
+        self.__driver = MyWebDriver(command_executor=self.cr,browser_handle=int(self.handle()),
+                                    take_over_path=self.session_path())
+
+    def session_path(self):
+        return self.__json_path
 
     # 新的存session结构
     def new_session_struct(self,handle=0):
@@ -317,7 +327,22 @@ class Dri(object):
     def handle(self):
         return str(self.__browser_handle)
 
-    # 判断浏览器是否处于连接状态(一般返回True,需要清理json文件)
+    # 检测当前浏览器是否处于连接状态
+    def __is_connection(self,local_url_port,sessionId):
+        url = local_url_port + "/session/" + sessionId + u'/url'
+        value = {"url": r"session_test.html", "sessionId": sessionId}
+
+        try:
+            response = requests.get(url=url, json=value, timeout=5)
+            if response.status_code == 200:
+                return True
+            if response.status_code in [404, 500]:
+                return False
+        except (ConnectionError, ReadTimeout):
+            return False
+        return False
+
+    # 判断所有浏览器浏览是否处于连接状态(一般返回True,需要清理json文件)
     def is_browser_connection(self):
         '''
             判断浏览器是否可以继续连接
@@ -328,52 +353,60 @@ class Dri(object):
                 -- 进程存在,且有页面存在
         :return: bool
         '''
-        # 本地端口
-        local_url_port = self.conf.get(self.handle(),None) # 判断当前句柄是否存在
-
-        # 出现新句柄时,更新session.json文件
-        if local_url_port is None:
-            with open(self._json_path,"r") as f:
-                self.conf = json.load(f)
-                self.conf.update(self.new_session_struct(self.handle()))
-            with open(self._json_path,'w') as f:
-                json.dump(self.conf, f)
-            return False
-
-        port = self.conf[self.handle()]["port"]
-
-        if local_url_port is None or port is None:
-            return False
+        print u"正在检测浏览器是否可以连接..."
+        copy_conf = copy.deepcopy(self.conf)
+        # 懒检测,只检测当前句柄的连接状态
+        if self.set_take_over:
+            local_url_port_, sessionId = copy_conf[self.handle()]["port"],copy_conf[self.handle()]["take_over"]["value"]["sessionId"]
+            if self.__is_connection(local_url_port_, sessionId) is False:
+                del self.conf[self.handle()]
+                print "{}号浏览器无法连接 --> 移除".format(self.handle())
         else:
-            local_url_port = self.conf[self.handle()]["port"]
+            # 删除无法连接的句柄
+            for i, info in copy_conf.items():
+                local_url_port_,take_over = info.get("port",None),info.get("take_over")
+                if local_url_port_ and take_over:
+                    sessionId = take_over["value"]["sessionId"]
+                    if self.__is_connection(local_url_port_,sessionId) is False:
+                        del self.conf[i]
+                        print "{}号浏览器无法连接 --> 移除".format(i)
 
-        # 本地session
-        sessionId = self.conf[self.handle()]["take_over"]["value"]["sessionId"]
-        print "local_url_port:",local_url_port
-        print "sessionId",sessionId
-
-        url = local_url_port+ "/session/" + sessionId + u'/url'
-        value = {"url": r"session_test.html", "sessionId": sessionId}
-
-        try:
-            response = requests.get(url=url, json=value,timeout=5)
-            if response.status_code == 200:
-                return True
-            if response.status_code in [404,500]:
-                return False
-        except (ConnectionError,ReadTimeout):
-            return False
-        return False
-
-    def clear_json(self):
-        # with open(self._json_path, "w") as f:
-        #     json.dump(self.new_session_struct(), f)
-        # self.conf = self.new_session_struct()
-        with open(self._json_path, "r") as f:
-            self.conf = json.load(f)
-            self.conf.update(self.new_session_struct(self.handle()))
-        with open(self._json_path, 'w') as f:
+        if self.conf:
+            pass
+            # 重新排序
+            # copy_conf = copy.deepcopy(self.conf)
+            # self.conf.clear()
+            # index = 0
+            # for info in copy_conf.values():
+            #     self.conf[str(index)] = info
+            #     index += 1
+        else:
+            self.conf = self.new_session_struct(self.handle()) if self.set_take_over else self.new_session_struct(0)
+        # print "----",self.conf
+        with open(self.session_path(), 'w') as f:
             json.dump(self.conf, f)
+
+    def create_new_browser(self):
+        # 获取句柄最大的数字
+        conf_int_list = [int(i) for i in self.conf.keys()]
+        max_handle = max(conf_int_list)
+        # if self.conf[str(max_handle)]["port"] is None or self.conf[str(max_handle)]["take_over"] is None:
+        #     pass
+        # else:
+        #     max_handle += 1
+        #     self.conf.update(self.new_session_struct(max_handle))
+
+
+        # 接管
+        if self.set_take_over:
+            max_handle = int(self.handle())
+        else: # 句柄由系统自己决定
+            max_handle += 1
+            self.__browser_handle = max_handle
+        self.conf.update(self.new_session_struct(max_handle))
+        # print self.conf[self.handle()]
+
+        print "创建新的{}号浏览器连接".format(max_handle)
 
     def headers(self):
         return self.cr.headers_
@@ -384,10 +417,10 @@ class Dri(object):
     def quit(self):
         self.__driver.quit()
 
-d = Dri(is_take_over=True,browser_handle=1)
-# d.get("https://www.baidu.com/")
+d = Dri(is_take_over=True,browser_handle=2)
+d.get("https://www.baidu.com/")
 # d.get("https://www.cnblogs.com/wwwwtt/p/15892233.html")
-d.get(r"D:\code\my_html\automationCode.html")
+# d.get(r"D:\code\my_html\automationCode.html")
 print d.headers()
 # time.sleep(2)
 # d.quit()
