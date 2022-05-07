@@ -9,7 +9,7 @@
     但是在操作上比接管更加方便
 
 '''
-
+import time
 
 from compat import (
     os,
@@ -26,8 +26,8 @@ from compat import (
     Command,
     WebDriver
 )
-import copy
 from utils import to_driver_path
+from color import PrintColor
 # 这个不是报错
 from selenium import __version__
 
@@ -109,7 +109,6 @@ class MyChromeRemoteConnection(ChromeRemoteConnection):
 
     @classmethod
     def get_remote_connection_headers(cls, parsed_url, keep_alive=False):
-        print "=========================="
         """
         Get headers for remote request.
 
@@ -154,7 +153,6 @@ class MyWebDriver(WebDriver):
 
         with open(take_over_path,"r") as f:
             self.__take_over = json.load(f)
-        # print "---------->",self.__take_over
         self.__take_over_path=take_over_path
         self._parameters = None
 
@@ -200,11 +198,6 @@ class MyWebDriver(WebDriver):
             self.__take_over[self.handle()]["take_over"] = response
             with open(self.__take_over_path, "w") as f2:
                 json.dump(self.__take_over, f2)
-            # with open(self.__take_over_path,"r") as f:
-            #     c = json.load(f)
-            #     with open(self.__take_over_path,"w") as f2:
-            #         c[self.handle()]["take_over"] = response
-            #         json.dump(c,f2)
         else:
             response = self.take_over()
 
@@ -222,31 +215,13 @@ class MyWebDriver(WebDriver):
         self.command_executor.w3c = self.w3c
 
 
-
-# s = Service("chromedriver.exe",0)
-# s.start()
-# # print s.command_line_args()
-# print s.service_url
-# # print s.is_connectable()
-# cr = ChromeRemoteConnection(remote_server_addr=s.service_url,
-#                             keep_alive=True)
-#
-# # s.service_url 需要写入文件
-#
-# # {'capabilities': {'alwaysMatch': {}, 'firstMatch': [{}]}, 'desiredCapabilities': {}}
-# c = MyWebDriver(command_executor=cr,desired_capabilities=None)
-# c.get("https://www.baidu.com/")
-# sessionId = c.session_id
-# print sessionId
-
 class Dri(object):
-    def __init__(self,executable_path="chromedriver",browser_handle=None,is_take_over=False):
+    def __init__(self,executable_path="chromedriver",is_take_over=False,browser_handle=None):
         '''
 
         :param executable_path: 浏览器驱动路径
-        :param browser_handle: 浏览器句柄
         :param is_take_over: 浏览器是否需要接管
-
+        :param browser_handle: 浏览器句柄(当is_take_over为False时,设置将失效)
         实现浏览器接管的流程
         [{"browser_handle":session},{"browser_handle":session},{"browser_handle":session},...]
                     启动程序
@@ -256,7 +231,7 @@ class Dri(object):
            使用句柄从session列表获取真实存在的浏览器
                  |                |          |
                  |浏览器不存在      |句柄不存在   |浏览器存在
-                 |                |           |
+                 |               |           |
             重新生成新的浏览器session
                             |                   |
                             |                   |
@@ -308,9 +283,23 @@ class Dri(object):
             with open(self.session_path(),"w") as f:
                 json.dump(self.conf,f)
 
-        self.cr = MyChromeRemoteConnection(remote_server_addr=self.conf[self.handle()]["port"],
-                                    keep_alive=True)
-        self.__driver = MyWebDriver(command_executor=self.cr,browser_handle=int(self.handle()),
+        # 打开浏览器
+        self.switch_handle(self.handle())
+        # self.cr = MyChromeRemoteConnection(remote_server_addr=self.conf[self.handle()]["port"],
+        #                             keep_alive=True)
+        # self.__driver = MyWebDriver(command_executor=self.cr,browser_handle=int(self.handle()),
+        #                             take_over_path=self.session_path())
+
+    # 切换句柄
+    def switch_handle(self,browser_handle=None):
+        '''
+            在浏览器运行期间切换句柄(当前浏览器失去控制权)
+        :param browser_handle: 浏览器句柄
+        :return:
+        '''
+        self.cr = MyChromeRemoteConnection(remote_server_addr=self.conf[str(browser_handle)]["port"],
+                                           keep_alive=True)
+        self.__driver = MyWebDriver(command_executor=self.cr, browser_handle=int(str(browser_handle)),
                                     take_over_path=self.session_path())
 
     def session_path(self):
@@ -353,7 +342,7 @@ class Dri(object):
             local_url_port_, sessionId = copy_conf[self.handle()]["port"],copy_conf[self.handle()]["take_over"]["value"]["sessionId"]
             if self.__is_connection(local_url_port_, sessionId) is False:
                 del self.conf[self.handle()]
-                print "[{}]号浏览器无法连接 --> 移除".format(self.handle())
+                print PrintColor.red(u"Browser [{}] failed to connect --> remove".format(self.handle()))
         else:
             # 删除无法连接的句柄
             for i, info in copy_conf.items():
@@ -362,7 +351,7 @@ class Dri(object):
                     sessionId = take_over["value"]["sessionId"]
                     if self.__is_connection(local_url_port_,sessionId) is False:
                         del self.conf[i]
-                        print "[{}]号浏览器无法连接 --> 移除".format(i)
+                        print PrintColor.red(u"Browser [{}] failed to connect --> remove".format(i))
 
         if self.conf:
             pass
@@ -386,10 +375,12 @@ class Dri(object):
         if self.set_take_over:
             max_handle = int(self.handle())
         else: # 句柄由系统自己决定
-            max_handle += 1
+            if self.conf[str(max_handle)] != self.new_session_struct(max_handle)[str(max_handle)]:
+                max_handle += 1
+                print "============"
             self.__browser_handle = max_handle
         self.conf.update(self.new_session_struct(max_handle))
-        print "创建新的[{}]号浏览器连接".format(max_handle)
+        print PrintColor.green(u"Creating a New browser [{}]".format(str(max_handle)))
 
     def headers(self):
         return self.cr.headers_
@@ -400,10 +391,10 @@ class Dri(object):
     def quit(self):
         self.__driver.quit()
 
-d = Dri(is_take_over=True,browser_handle=2)
+d = Dri(is_take_over=False,browser_handle=1)
 d.get("https://www.baidu.com/")
 # d.get("https://www.cnblogs.com/wwwwtt/p/15892233.html")
 # d.get(r"D:\code\my_html\automationCode.html")
-print d.headers()
+# time.sleep(3)
 # time.sleep(2)
 # d.quit()
