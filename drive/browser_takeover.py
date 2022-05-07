@@ -254,10 +254,10 @@ class Dri(object):
                 读取session文件(获取到浏览器session列表)
                       |
            使用句柄从session列表获取真实存在的浏览器
-                 |                              |
-                 |浏览器不存在                    |浏览器存在
-                 |                              |
-    重新生成新的浏览器session覆盖原来的位置
+                 |                |          |
+                 |浏览器不存在      |句柄不存在   |浏览器存在
+                 |                |           |
+            重新生成新的浏览器session
                             |                   |
                             |                   |
                             \                  |
@@ -271,7 +271,7 @@ class Dri(object):
         self.set_take_over = is_take_over
         # 初始文件
         init_file = False
-        # 创建文件
+
         if os.path.isfile(self.session_path()) is False:
             init_file = True
         else:
@@ -281,14 +281,14 @@ class Dri(object):
                     self.conf = json.load(f)
                 except ValueError:
                     init_file = True
-
+        # 创建文件
         if init_file:
             with open(self.session_path(),'w') as f:
                 self.conf = self.new_session_struct(self.handle())
                 json.dump(self.conf, f)
         else:
             # 检测所有句柄的可连接性
-            self.is_browser_connection()
+            self.inspect_browsers_connection()
 
         addr = self.conf.get(self.handle(), None)
 
@@ -308,10 +308,8 @@ class Dri(object):
             with open(self.session_path(),"w") as f:
                 json.dump(self.conf,f)
 
-
         self.cr = MyChromeRemoteConnection(remote_server_addr=self.conf[self.handle()]["port"],
                                     keep_alive=True)
-
         self.__driver = MyWebDriver(command_executor=self.cr,browser_handle=int(self.handle()),
                                     take_over_path=self.session_path())
 
@@ -331,7 +329,6 @@ class Dri(object):
     def __is_connection(self,local_url_port,sessionId):
         url = local_url_port + "/session/" + sessionId + u'/url'
         value = {"url": r"session_test.html", "sessionId": sessionId}
-
         try:
             response = requests.get(url=url, json=value, timeout=5)
             if response.status_code == 200:
@@ -342,16 +339,12 @@ class Dri(object):
             return False
         return False
 
-    # 判断所有浏览器浏览是否处于连接状态(一般返回True,需要清理json文件)
-    def is_browser_connection(self):
+    # 判断所有浏览器浏览是否处于连接状态
+    def inspect_browsers_connection(self):
         '''
-            判断浏览器是否可以继续连接
-            重新建立连接
-                -- 进程不存在
-                -- 进程存在,也没有任何页面
-            继续连接:
-                -- 进程存在,且有页面存在
-        :return: bool
+            检查浏览器的连接状态,
+            移除无效连接
+        :return:
         '''
         print u"正在检测浏览器是否可以连接..."
         copy_conf = copy.deepcopy(self.conf)
@@ -360,7 +353,7 @@ class Dri(object):
             local_url_port_, sessionId = copy_conf[self.handle()]["port"],copy_conf[self.handle()]["take_over"]["value"]["sessionId"]
             if self.__is_connection(local_url_port_, sessionId) is False:
                 del self.conf[self.handle()]
-                print "{}号浏览器无法连接 --> 移除".format(self.handle())
+                print "[{}]号浏览器无法连接 --> 移除".format(self.handle())
         else:
             # 删除无法连接的句柄
             for i, info in copy_conf.items():
@@ -369,7 +362,7 @@ class Dri(object):
                     sessionId = take_over["value"]["sessionId"]
                     if self.__is_connection(local_url_port_,sessionId) is False:
                         del self.conf[i]
-                        print "{}号浏览器无法连接 --> 移除".format(i)
+                        print "[{}]号浏览器无法连接 --> 移除".format(i)
 
         if self.conf:
             pass
@@ -382,7 +375,6 @@ class Dri(object):
             #     index += 1
         else:
             self.conf = self.new_session_struct(self.handle()) if self.set_take_over else self.new_session_struct(0)
-        # print "----",self.conf
         with open(self.session_path(), 'w') as f:
             json.dump(self.conf, f)
 
@@ -390,13 +382,6 @@ class Dri(object):
         # 获取句柄最大的数字
         conf_int_list = [int(i) for i in self.conf.keys()]
         max_handle = max(conf_int_list)
-        # if self.conf[str(max_handle)]["port"] is None or self.conf[str(max_handle)]["take_over"] is None:
-        #     pass
-        # else:
-        #     max_handle += 1
-        #     self.conf.update(self.new_session_struct(max_handle))
-
-
         # 接管
         if self.set_take_over:
             max_handle = int(self.handle())
@@ -404,9 +389,7 @@ class Dri(object):
             max_handle += 1
             self.__browser_handle = max_handle
         self.conf.update(self.new_session_struct(max_handle))
-        # print self.conf[self.handle()]
-
-        print "创建新的{}号浏览器连接".format(max_handle)
+        print "创建新的[{}]号浏览器连接".format(max_handle)
 
     def headers(self):
         return self.cr.headers_
