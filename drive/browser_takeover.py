@@ -242,6 +242,8 @@ class Dri(object):
         # 浏览器句柄
         self.__browser_handle = 0 if browser_handle is None else browser_handle
         self.__json_path = "session.json"
+        # 测试浏览器是否连接的页面
+        self.__test_session_html = 'session_test.html'
         # 接管
         self.set_take_over = is_take_over
         # 初始文件
@@ -316,8 +318,17 @@ class Dri(object):
 
     # 检测当前浏览器是否处于连接状态
     def __is_connection(self,local_url_port,sessionId):
+        '''
+            测试原理:
+                浏览器处于打开状态,则get返回200
+                如果浏览器只有进程存在,返回404
+                如果过浏览器进程不存在,返回500
+        :param local_url_port:
+        :param sessionId:
+        :return:
+        '''
         url = local_url_port + "/session/" + sessionId + u'/url'
-        value = {"url": r"session_test.html", "sessionId": sessionId}
+        value = {"url": self.__test_session_html, "sessionId": sessionId}
         try:
             response = requests.get(url=url, json=value, timeout=5)
             if response.status_code == 200:
@@ -392,9 +403,9 @@ class Dri(object):
         self.__driver.quit()
 
 d = Dri(is_take_over=False,browser_handle=1)
-d.get("https://www.baidu.com/")
+# d.get("https://www.baidu.com/")
 # d.get("https://www.cnblogs.com/wwwwtt/p/15892233.html")
-# d.get(r"D:\code\my_html\automationCode.html")
+d.get(r"D:\code\my_html\automationCode.html")
 # time.sleep(3)
 # time.sleep(2)
 # d.quit()
