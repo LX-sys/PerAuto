@@ -7,7 +7,8 @@
 
     浏览器中断后继续执行(类似接管)
     但是在操作上比接管更加方便
-
+    w3c万位网协议网址: https://w3c.github.io/webdriver/webdriver-spec.html#sessions
+    检查反爬的网址: https://intoli.com/blog/not-possible-to-block-chrome-headless/chrome-headless-test.html
 '''
 import time
 
@@ -216,7 +217,7 @@ class MyWebDriver(WebDriver):
 
 
 class Dri(object):
-    def __init__(self,executable_path="chromedriver",is_take_over=False,browser_handle=None):
+    def __init__(self,executable_path="chromedriver",is_take_over=False,browser_handle=None,options=None):
         '''
 
         :param executable_path: 浏览器驱动路径
@@ -246,6 +247,8 @@ class Dri(object):
         self.__test_session_html = 'session_test.html'
         # 接管
         self.set_take_over = is_take_over
+        #
+        self.options = options
         # 初始文件
         init_file = False
 
@@ -302,7 +305,7 @@ class Dri(object):
         self.cr = MyChromeRemoteConnection(remote_server_addr=self.conf[str(browser_handle)]["port"],
                                            keep_alive=True)
         self.__driver = MyWebDriver(command_executor=self.cr, browser_handle=int(str(browser_handle)),
-                                    take_over_path=self.session_path())
+                                    take_over_path=self.session_path(),options=self.options)
 
     def session_path(self):
         return self.__json_path
@@ -402,10 +405,13 @@ class Dri(object):
     def quit(self):
         self.__driver.quit()
 
+
+
+
 d = Dri(is_take_over=False,browser_handle=1)
 # d.get("https://www.baidu.com/")
 # d.get("https://www.cnblogs.com/wwwwtt/p/15892233.html")
-d.get(r"D:\code\my_html\automationCode.html")
+# d.get(r"D:\code\my_html\automationCode.html")
 # time.sleep(3)
 # time.sleep(2)
 # d.quit()
