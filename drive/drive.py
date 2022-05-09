@@ -163,6 +163,8 @@ class Options(object):
     zh_cn_utf8 = OptionVerification("lang=zh_CN.UTF-8")
     win_max = OptionVerification("--start-maximized")
     headless = OptionVerification("--headless")
+    test_type = OptionVerification("--test-type")
+    ignore_certificate_errors = OptionVerification("--ignore-certificate-errors")
     disable_info_bar = OptionVerification("--disable-infobars")
     prefs = OptionVerification("prefs", {
         'profile.default_content_setting_values': {
