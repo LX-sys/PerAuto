@@ -97,7 +97,8 @@ class OptionVerification(object):
             u"win_max": u"浏览器最大化",
             u"zh_cn_utf8": u"设置utf8编码",
             u"prefs": u"去除网页通知",
-            u"disable_info_bar": u"禁止浏览器正被自动化程序控制的提示"
+            u"disable_info_bar": u"禁止浏览器正被自动化程序控制的提示",
+            u"ignore_certificate_errors":u"忽略不信任证书"
         }
 
     def __set__(self, instance, value):
