@@ -3,9 +3,15 @@
 # @author:LX
 # @file:move_.py
 # @software:PyCharm
-from selenium import webdriver
-import random
-import pyautogui
+from compat import (
+    math,
+    time,
+    numpy,
+    random,
+    webdriver,
+    pyautogui
+)
+
 driver = webdriver.Chrome(executable_path="chromedriver.exe")
 
 url = 'file:///D:/code/my_html/automationCode.html'
@@ -75,22 +81,16 @@ def personification_move_trajectory(before_ele=None, after_ele=None):
                 点二(中心点)由两个元素形成的矩形高度中心偏上位置(大约十分之六的位置)
         '''
 
-
 def to(t):
     be_ = t["be"]
     af_ = t["af"]
-    return (be_["x"], be_["y"],be_["w"],be_["h"],
-            af_["x"], af_["x"],af_["w"],af_["h"])
+    return ((be_["x"], be_["y"],be_["w"],be_["h"]),
+            (af_["x"], af_["y"],af_["w"],af_["h"]))
 
 
 be = driver.find_element("id","myselect")
 af = driver.find_element("id","myinput")
 t = personification_move_trajectory(before_ele=be,after_ele=af)
-be_ = t["be"]
-af_ = t["af"]
-
-import numpy
-import math
 
 # from DM import DM
 
@@ -167,7 +167,8 @@ class HMT(HumanMoveTrajectory):
     pass
 
 
-HMT.dm_Bessel_move((be_["x"], be_["y"], 57, 30), (af_["x"], af_["x"], 177, 21), duration=HMT.YOUTH)
+# HMT.dm_Bessel_move((be_["x"], be_["y"], 57, 30), (af_["x"], af_["x"], 177, 21), duration=HMT.YOUTH)
+HMT.dm_Bessel_move(*to(t), duration=HMT.YOUTH)
 #  (500, 200),(200, 700),
 # HMT.Bessel_move(duration=HMT.YOUTH,move_drive_f=dm.moveto)
 # HMT.dm_Bessel_move((200, 300, 80, 50), (200, 700, 80, 50), duration=HMT.YOUTH)
