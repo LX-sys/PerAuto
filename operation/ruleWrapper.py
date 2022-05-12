@@ -40,6 +40,7 @@
 解决随机广告个数,随机按钮个数模型
 while True:
     flag = True
+    old_pos = pyautogui.position()
     [try:
         for 单条规则 in 规则列表:
             具体操作(单条规则)
@@ -48,7 +49,7 @@ while True:
         [定位元素位置]
     except:
         pass]
-    if flag:
+    if flag or pyautogui.position() == old_pos:
         break
 # 常见按钮的规则
 ["No","1","0","Continue", "Yes","Skip"]
