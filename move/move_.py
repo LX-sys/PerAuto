@@ -25,7 +25,6 @@ driver.maximize_window()
 be = driver.find_element("id",'su')
 af = driver.find_element("id","kw")
 
-
 # 人类鼠标移动轨迹
 class HumanMoveTrajectory(object):
     '''
@@ -34,13 +33,16 @@ class HumanMoveTrajectory(object):
         老年人
     '''
     YOUTH = (0.01, 0.018)
-    MIDDLE_AGED = (0.019, 0.03)
+    MIDDLE_AGED = (0.019,0.03)
     ELDERLY = (0.02, 0.035)
+
+    # 两个元素之间的最小间隔距离
+    ELE_MIN_DISTANCE = 35
 
     # 获取元素的x,y,w,h
     @staticmethod
-    def get_ele_rect(ele=None, note=""):
-        ele_w, ele_h, ele_x, ele_y = 0, 0, 0, 0
+    def get_ele_rect(ele=None,note=""):
+        ele_w, ele_h,ele_x, ele_y =0,0,0,0
         try:
             # 如果网页刷新找不到前元素,则用鼠标当前位置代替
             if ele.is_displayed():
@@ -58,7 +60,7 @@ class HumanMoveTrajectory(object):
             ele_w, ele_h = 0, 0
             ele_x, ele_y = pos.x, pos.y
 
-        return ele_x, ele_y, ele_w, ele_h
+        return ele_x, ele_y,ele_w, ele_h
 
     # 获取拟人移动轨迹
     @staticmethod
@@ -89,34 +91,55 @@ class HumanMoveTrajectory(object):
         '''
 
         # 前元素
-        before_e_x, before_e_y, before_e_w, before_e_h = HumanMoveTrajectory.get_ele_rect(before_ele)
+        before_e_x, before_e_y,before_e_w, before_e_h = HumanMoveTrajectory.get_ele_rect(before_ele,note="获取前一个元素")
         # 后元素
-        after_e_x, after_e_y, after_e_w, after_e_h = HumanMoveTrajectory.get_ele_rect(after_ele)
+        after_e_x, after_e_y,after_e_w, after_e_h = HumanMoveTrajectory.get_ele_rect(after_ele,"获取后一个元素")
 
         print "原始前元素:", before_e_x, before_e_y, before_e_w, before_e_h
         print "原始后元素:", after_e_x, after_e_y, after_e_w, after_e_h
-
-        # 后元素的落脚点
-        if after_e_x >= before_e_x:
-            # 鼠标落在元素中间分开靠左部分
-            after_arrival_x = (after_e_x * 1.1, after_e_x + after_e_w // 2)
-        if after_e_x <= before_e_x:
-            # 鼠标落在元素中间分开靠右部分
-            after_arrival_x = ((after_e_x + after_e_w // 2) * 1.1, after_e_x + after_e_w // 2 - after_e_w // 6)
-        after_arrival_x = random.uniform(*after_arrival_x)
-
-        after_arrival_y = random.uniform(after_e_y + after_e_h + 2, after_e_y + after_e_h + after_e_h - 2)
-        # +40+11    +40+22
         before_arrival_pos = {"x": before_e_x, "y": before_e_y, "w": before_e_w, "h": before_e_h}
-        after_arrival_pos = {"x": after_arrival_x, "y": after_arrival_y, "w": after_e_w, "h": after_e_h}
-        print "前元素:", before_arrival_pos
 
+        # 始终保证 a是最大x坐标,b是小的x坐标,bw是小的宽度
+        if after_e_x >= before_e_x:
+            a,b,bw = after_e_x,before_e_x,before_e_w
+        else:
+            a,b,bw = before_e_x,after_e_x,after_e_w
+        # 后元素的落脚点
+        if math.fabs(a-b-bw) <= HumanMoveTrajectory.ELE_MIN_DISTANCE and after_e_x >= before_e_x:
+            print 3
+            # 两个元素的距离低于35px，且后元素的的x>=前元素的x,偏左
+            after_arrival_x = (after_e_x,
+                               after_e_x + after_e_w / random.uniform(2.0,3.3))
+        elif math.fabs(a-b-bw) <= HumanMoveTrajectory.ELE_MIN_DISTANCE and after_e_x <= before_e_x:
+            print 4
+            # 两个元素的距离低于35px，且后元素的的x<=前元素的x,偏又
+            after_arrival_x = ((after_e_x + after_e_w / 2)*random.uniform(1.1,1.2),
+                               after_e_x + after_e_w*random.uniform(0.8,0.95))
+        elif after_e_x >= before_e_x:
+            print "1"
+            # 鼠标落在元素中间分开靠左部分
+            after_arrival_x = (after_e_x,
+                               after_e_x + after_e_w / 2)
+        elif after_e_x <= before_e_x:
+            print "2"
+            # 鼠标落在元素中间分开靠右部分
+            after_arrival_x = (after_e_x + after_e_w / 2,
+                               after_e_x + after_e_w)
+
+        after_arrival_x = random.uniform(*after_arrival_x)
+        # after_arrival_y = random.uniform(after_e_y + after_e_h + 2, after_e_y + after_e_h + after_e_h - 2)
+        after_arrival_y = random.uniform(after_e_y+2+68, after_e_y + after_e_h - 2+68)
+        # +40+11    +40+22
+        after_arrival_pos = {"x": after_arrival_x, "y": after_arrival_y, "w": after_e_w, "h": after_e_h}
+
+        print "前元素:", before_arrival_pos
         print "后元素:", after_arrival_pos
         return {"be": before_arrival_pos, "af": after_arrival_pos}
 
+
     # 贝塞尔鼠标移动
     @staticmethod
-    def Bessel_move(before_pos=(200, 700, 80, 50), after_pos=(500, 200, 80, 50), duration=(0.01, 0.018), radian=None,
+    def Bessel_move(before_pos=(200, 700, 80, 50), after_pos=(500, 200, 80, 50), duration=(0.01,0.018), radian=None,
                     move_drive_f=None):
         '''
 
@@ -135,28 +158,30 @@ class HumanMoveTrajectory(object):
         bw, bh = before_pos[2], before_pos[3]
         # 弧度随机
         if radian is None:
+            # 这组是我自己测试出来,最接近人自然滑动的弧度
             radian = {"up_arc": (0.51, 0.54), "down_arc": (0.8, 0.9), "random": True}
             radian_ = random.choice([radian["up_arc"], radian["down_arc"]]) if radian["random"] else radian["up_arc"]
         else:
-            radian_ = (radian, radian + 0.1)
-        # print before_pos[0],bw,after_pos[0]
-        # print math.fabs(before_pos[0]+bw-after_pos[0])
-        # 如果两者距离小于12px
-        # if before_pos[0] >= after_pos[0]:
-        #     b,a = before_pos[0],after_pos[0]
-        #     w = after_pos[2]
-        # if before_pos[0] <= after_pos[0]:
-        #     b,a = after_pos[0],before_pos[0]
-        #     w = before_pos[2]
-        # print b,a,w
-        # print b-(a+w)
-        # if math.fabs(b-(a+w)) <= 12:
-        #     print "------------"
-        #     radian_ = (0.6,0.6)
+            radian_ = (radian,radian+0.1)
+
+        # 始终保证 a是最大x坐标,w是最大x坐标的宽度,b是小的x坐标,bw是小的宽度
+        if after_pos[0] >= before_pos[0]:
+            a,a_w,b,b_w = after_pos[0],after_pos[2]//2,before_pos[0],before_pos[2]
+        else:
+            a,a_w, b,b_w = before_pos[0],before_pos[2]//2, after_pos[0], 0.0
+
+        print "a={} b={} bw={} aw={}".format(a,b,b_w,a_w)
+        print a-(b+b_w+a_w)
+        # 当两个元素距离过进时,尽量将曲线的幅度压平
+        if math.fabs(a-(b+b_w+a_w)) <= HumanMoveTrajectory.ELE_MIN_DISTANCE \
+            or math.fabs(a-(b+b_w+a_w)) <= 65:
+            print "------------"
+            radian_ = (0.5,random.uniform(0.9,1.0))
 
         middle_pos = (math.fabs(before_pos[0] + bw + (after_pos[0] - before_pos[0] + bw) // 2),
                       math.fabs(after_pos[1] + bh + (before_pos[1] - after_pos[1] + bh) // 2))
 
+        print "middle_pos={}".format(middle_pos)
         middle_pos = [i * random.uniform(*radian_) for i in middle_pos]
         # print middle_pos
         P0, P1, P2 = numpy.array([before_pos[:2], middle_pos, after_pos[:2]])
@@ -178,8 +203,7 @@ class HumanMoveTrajectory(object):
 
     # 贝塞尔鼠标移动 - 使用大漠驱动(变量名必须是dm)
     @staticmethod
-    def dm_Bessel_move(before_pos=(200, 700, 80, 50), after_pos=(500, 200, 80, 50), duration=(0.01, 0.018),
-                       radian=None):
+    def dm_Bessel_move(before_pos=(200, 700, 80, 50), after_pos=(500, 200, 80, 50), duration=(0.01,0.018), radian=None):
         HumanMoveTrajectory.Bessel_move(before_pos, after_pos, duration, radian, move_drive_f=dm.moveto)
 
     # 光滑曲线公式
@@ -194,13 +218,12 @@ class HumanMoveTrajectory(object):
     # 将移动轨迹的返回格式转换成贝塞尔移动需要的格式
     @staticmethod
     def to_bessel(move_trajectory):
-        be_, af_ = move_trajectory["be"], move_trajectory["af"]
+        be_,af_ = move_trajectory["be"],move_trajectory["af"]
 
         return (
             (be_["x"], be_["y"], be_["w"], be_["h"]),
             (af_["x"], af_["y"], af_["w"], af_["h"])
         )
-
 
 import numpy
 import math
@@ -209,10 +232,8 @@ from DM import DM
 
 dm = DM()
 
-
 class HMT(HumanMoveTrajectory):
     pass
-
 
 t = HMT.get_move_trajectory(before_ele=be, after_ele=af)
 
